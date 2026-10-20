@@ -43,12 +43,18 @@ Tower Defense en el navegador donde los enemigos recalculan la ruta más corta s
 
 ## Stack y entorno
 
-- **Windows 10 + PowerShell 5.1.** No existen `&&` ni `||`; encadena con `;` o con `if ($?) { ... }`.
-- **mise** gestiona las herramientas (`mise.toml` en la raíz): Node LTS (24.x) y pnpm. Node no está en el PATH global; usa los shims de mise o `mise exec -- <cmd>`.
+- El usuario desarrolla en **dos máquinas: Windows y CachyOS (Linux)**. Todo lo del repo (scripts, rutas, configuración) debe funcionar en ambas: nada de comandos o rutas propios de un sistema operativo en el código ni en los scripts de `package.json`.
+- **mise** gestiona las herramientas (`mise.toml` en la raíz): Node 24 y pnpm 12. Si `pnpm` o `node` no aparecen en la shell, usa `mise exec -- <cmd>`.
 - **pnpm** (nunca npm ni yarn), **Vite** (plantilla vanilla-ts, sin framework de UI), **TypeScript strict**, **Three.js**, **Vitest**, **Biome** (lint + formato).
 - Usa versiones actuales de todo; no fijes versiones viejas sin motivo.
+- Finales de línea LF en todo el repo (`.gitattributes`).
+- **Solo en Windows:** la shell de Claude es PowerShell 5.1, donde no existen `&&` ni `||`; encadena con `;` o con `if ($?) { ... }`.
 
-### Comandos (se crean en el bloque 0)
+### Depuración en el navegador
+- El MCP **chrome-devtools** (`.mcp.json`, paquete `chrome-devtools-mcp` en devDependencies) permite abrir el juego en Chrome y leer la consola, inspeccionar la red, medir rendimiento y tomar capturas.
+- Úsalo cuando haga falta ver el juego corriendo: errores en runtime, problemas de render o FPS, o verificar un cambio visual. Levanta antes `pnpm dev`.
+
+### Comandos
 ```
 pnpm dev          # servidor de desarrollo
 pnpm test         # vitest (watch); pnpm test --run para una sola pasada
