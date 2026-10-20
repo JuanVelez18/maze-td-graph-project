@@ -27,6 +27,11 @@ Tower Defense en el navegador donde los enemigos recalculan la ruta más corta s
 - **Código en inglés:** identificadores, comentarios, nombres de archivo y mensajes de commit.
 - Si una decisión de diseño no está aquí ni en `docs/TARGET.md`, recomienda una opción y sigue; pregunta solo si cambia el alcance o el plan.
 
+### Memoria (engram)
+- Usa engram para que no se pierdan las conclusiones de las conversaciones que no entran al repo, o que entran pero en archivos lejanos a este (razones de decisiones, alternativas descartadas, bugs y su solución, particularidades de Three.js o del entorno, estado al cerrar la sesión).
+- Al inicio de una sesión, revisa en engram el contexto reciente del proyecto. Al cerrar un bloque o una sesión, guarda un resumen.
+- No dupliques lo que ya dice este archivo: si una decisión es estable, va aquí, y en engram queda su contexto.
+
 ### Git
 - Claude prepara un commit al cerrar cada bloque del plan (y en subpasos estables si el bloque es largo), pero **nunca commitea sin la revisión del usuario**:
   1. Al terminar, Claude resume qué cambió y en qué archivos, y propone el mensaje de commit.
