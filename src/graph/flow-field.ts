@@ -1,4 +1,4 @@
-import type { CellIndex, Grid } from './grid'
+import { type CellIndex, type Grid, isWall, neighbors } from './grid'
 
 /** Marker stored in the flow field arrays for "no value". */
 export const UNREACHABLE = -1
@@ -17,16 +17,52 @@ export type FlowField = {
 }
 
 /** BFS from `goal` over the open cells. If `goal` is a wall, nothing is reachable. */
-export function computeFlowField(_grid: Grid, _goal: CellIndex): FlowField {
-  throw new Error('TODO: computeFlowField')
+export function computeFlowField(grid: Grid, goal: CellIndex): FlowField {
+  const flowField = {
+    distance: new Int32Array(grid.width * grid.height).fill(UNREACHABLE),
+    next: new Int32Array(grid.width * grid.height).fill(UNREACHABLE),
+    visited: 0,
+  }
+  if (isWall(grid, goal)) return flowField
+
+  flowField.distance[goal] = 0
+
+  let frontier = [goal]
+  let level = 0
+
+  while (frontier.length > 0) {
+    const nextFrontier: CellIndex[] = []
+
+    for (const cell of frontier) {
+      flowField.visited++
+
+      neighbors(grid, cell).forEach((neighbor) => {
+        const seen = flowField.distance[neighbor] !== UNREACHABLE
+        if (seen) return
+
+        flowField.distance[neighbor] = level + 1
+        flowField.next[neighbor] = cell
+        nextFrontier.push(neighbor)
+      })
+    }
+
+    frontier = nextFrontier
+    level++
+  }
+
+  return flowField
 }
 
 /** Steps from `cell` to the goal, or `undefined` if there is no path. */
-export function distanceTo(_field: FlowField, _cell: CellIndex): number | undefined {
-  throw new Error('TODO: distanceTo')
+export function distanceTo(field: FlowField, cell: CellIndex): number | undefined {
+  const distance = field.distance[cell]
+
+  return distance === UNREACHABLE ? undefined : distance
 }
 
 /** Cell an enemy standing on `cell` should move to, or `undefined` at the goal or with no path. */
-export function nextStep(_field: FlowField, _cell: CellIndex): CellIndex | undefined {
-  throw new Error('TODO: nextStep')
+export function nextStep(field: FlowField, cell: CellIndex): CellIndex | undefined {
+  const next = field.next[cell]
+
+  return next === UNREACHABLE ? undefined : (next as CellIndex)
 }
