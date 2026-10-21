@@ -1,6 +1,6 @@
 import type { Brand } from '../shared/brand'
-import type { Result } from '../shared/result'
-import type { FlowField } from './flow-field'
+import { err, ok, type Result } from '../shared/result'
+import { computeFlowField, distanceTo, type FlowField } from './flow-field'
 import type { CellIndex, Grid } from './grid'
 
 /**
@@ -23,9 +23,13 @@ export type Disconnected = {
  * distance. Connectivity falls out of the same flow field the enemies will use.
  */
 export function connect(
-  _grid: Grid,
-  _goal: CellIndex,
-  _sources: readonly CellIndex[],
+  grid: Grid,
+  goal: CellIndex,
+  sources: readonly CellIndex[],
 ): Result<ConnectedGrid, Disconnected> {
-  throw new Error('TODO: connect')
+  const field = computeFlowField(grid, goal)
+  const invalidSources = sources.filter((source) => distanceTo(field, source) === undefined)
+  if (invalidSources.length > 0) return err({ kind: 'disconnected', cells: invalidSources })
+
+  return ok({ grid, goal, field } as ConnectedGrid)
 }
