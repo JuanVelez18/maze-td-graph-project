@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { maxDistance } from '../game/debug'
+import { bfsReplayLevel, maxDistance } from '../game/debug'
 import type { Enemy, GameState } from '../game/state'
 import type { ConnectedGrid } from '../graph/connectivity'
 import { distanceTo, nextStep } from '../graph/flow-field'
@@ -24,6 +24,8 @@ const COLORS = {
   hover: 0xffffff,
   arrow: 0x111318,
   unreachable: 0x16181d,
+  // BFS replay: the level being discovered. Cyan, outside the heatmap ramp.
+  frontier: 0x22e5ff,
 }
 /**
  * Debug heatmap, from the goal (distance 0) to the farthest cell. No stop is dark, so the
@@ -98,29 +100,37 @@ export function createScene(container: HTMLElement, initial: GameState): Scene {
       ? target.lerpColors(HEAT_NEAR, HEAT_MID, t * 2)
       : target.lerpColors(HEAT_MID, HEAT_FAR, (t - 0.5) * 2)
 
+  /** Whether a cell is shown in debug mode: always, unless the BFS replay has not reached it. */
+  const revealed = (distance: number, level: number | undefined) =>
+    level === undefined || distance <= level
+
   let tilesWorld: ConnectedGrid | undefined
   let tilesDebug: boolean | undefined
-  const syncTiles = (world: ConnectedGrid, debug: boolean) => {
-    // Only a new world (a tower placed or sold) or the debug toggle can change the colors.
-    if (world === tilesWorld && debug === tilesDebug) return
+  let tilesLevel: number | undefined
+  /** `level` is the BFS replay level, or `undefined` to show the whole field. */
+  const syncTiles = (world: ConnectedGrid, debug: boolean, level: number | undefined) => {
+    // Only a new world (a tower placed or sold), the debug toggle or the replay change the colors.
+    if (world === tilesWorld && debug === tilesDebug && level === tilesLevel) return
     tilesWorld = world
     tilesDebug = debug
+    tilesLevel = level
     const max = Math.max(maxDistance(world), 1)
     allCells.forEach((cell, i) => {
+      const distance = distanceTo(world.field, cell)
       if (cell === goal) color.setHex(COLORS.goal)
       else if (spawns.includes(cell)) color.setHex(COLORS.spawn)
       else if (!debug) color.setHex(COLORS.floor)
-      else {
-        const distance = distanceTo(world.field, cell)
-        if (distance === undefined) color.setHex(COLORS.unreachable)
-        else heatInto(distance / max, color)
-      }
+      else if (distance === undefined) color.setHex(COLORS.unreachable)
+      else if (distance === level) color.setHex(COLORS.frontier)
+      // Same normalization as the full heatmap, so the replay ends on exactly that picture.
+      else if (revealed(distance, level)) heatInto(distance / max, color)
+      else color.setHex(COLORS.floor)
       tiles.setColorAt(i, color)
     })
     if (tiles.instanceColor) tiles.instanceColor.needsUpdate = true
   }
   // Colors must exist before the first frame: the shader is compiled with or without them.
-  syncTiles(initial.world, initial.debug)
+  syncTiles(initial.world, initial.debug, bfsReplayLevel(initial))
 
   // Flow field arrows: a flat arrow per cell, pointing at the next cell of a shortest path.
   const arrowShape = new THREE.Shape()
@@ -149,13 +159,17 @@ export function createScene(container: HTMLElement, initial: GameState): Scene {
   const unitScale = new THREE.Vector3(1, 1, 1)
   const arrowPosition = new THREE.Vector3()
   let arrowsWorld: ConnectedGrid | undefined
-  const syncArrows = (world: ConnectedGrid) => {
-    if (world === arrowsWorld) return
+  let arrowsLevel: number | undefined
+  const syncArrows = (world: ConnectedGrid, level: number | undefined) => {
+    if (world === arrowsWorld && level === arrowsLevel) return
     arrowsWorld = world
+    arrowsLevel = level
     let count = 0
     for (const cell of allCells) {
       const next = nextStep(world.field, cell)
-      if (next === undefined) continue
+      // During the replay each discovered cell points at the one that discovered it, so the
+      // arrows grow the BFS tree level by level.
+      if (next === undefined || !revealed(distanceTo(world.field, cell) ?? 0, level)) continue
       const a = cellCoords(world.grid, cell)
       const b = cellCoords(world.grid, next)
       // Turning +X by an angle φ around Y gives (cos φ, -sin φ) on (x, z), hence the minus.
@@ -253,9 +267,10 @@ export function createScene(container: HTMLElement, initial: GameState): Scene {
   return {
     render(state, hover) {
       syncTowers(state.world.grid)
-      syncTiles(state.world, state.debug)
+      const level = bfsReplayLevel(state)
+      syncTiles(state.world, state.debug, level)
       arrows.visible = state.debug
-      if (state.debug) syncArrows(state.world)
+      if (state.debug) syncArrows(state.world, level)
       syncEnemies(state.world.grid, state.enemies)
       hoverMesh.visible = hover !== undefined
       if (hover !== undefined) {

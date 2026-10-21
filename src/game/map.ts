@@ -26,6 +26,7 @@ export function createGameFromGrid(grid: Grid, map: GameMap, rules: GameRules): 
     phase: { kind: 'break', timer: rules.firstBreak },
     paused: false,
     debug: false,
+    bfsReplay: undefined,
   }
 }
 

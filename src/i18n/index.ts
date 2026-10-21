@@ -1,5 +1,6 @@
 const es = {
-  'help.controls': 'Clic izq.: torre · Clic der.: vender · D: debug · P: pausa · R: reiniciar',
+  'help.controls':
+    'Clic izq.: torre · Clic der.: vender · D: debug · B: animar BFS · P: pausa · R: reiniciar',
   'status.life': '♥ {life}',
   'status.wave': 'Oleada {wave}',
   'status.next': 'Siguiente oleada en {seconds} s',
@@ -16,13 +17,15 @@ const es = {
   'debug.title': 'Modo debug · BFS desde la meta',
   'debug.steps': '{max} pasos',
   'debug.arrows': 'Flecha = siguiente paso',
+  'debug.replay': 'Nivel {level} de {max} · nodos en la frontera: {frontier}',
 }
 
 export type Key = keyof typeof es
 export type Locale = 'es' | 'en'
 
 const en: Record<Key, string> = {
-  'help.controls': 'Left click: tower · Right click: sell · D: debug · P: pause · R: restart',
+  'help.controls':
+    'Left click: tower · Right click: sell · D: debug · B: play BFS · P: pause · R: restart',
   'status.life': '♥ {life}',
   'status.wave': 'Wave {wave}',
   'status.next': 'Next wave in {seconds} s',
@@ -39,6 +42,7 @@ const en: Record<Key, string> = {
   'debug.title': 'Debug mode · BFS from the goal',
   'debug.steps': '{max} steps',
   'debug.arrows': 'Arrow = next step',
+  'debug.replay': 'Level {level} of {max} · nodes in the frontier: {frontier}',
 }
 
 const dictionaries: Record<Locale, Record<Key, string>> = { es, en }

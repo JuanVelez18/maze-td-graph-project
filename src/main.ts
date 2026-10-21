@@ -42,6 +42,7 @@ window.addEventListener('keydown', (e) => {
   if (e.repeat) return
   const key = e.key.toLowerCase()
   if (key === 'd') queue.push({ kind: 'toggle-debug' })
+  else if (key === 'b') queue.push({ kind: 'play-bfs' })
   else if (key === 'p') queue.push({ kind: 'toggle-pause' })
   else if (key === 'r') restart()
 })

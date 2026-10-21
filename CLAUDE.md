@@ -86,6 +86,7 @@ type Msg =
   | { kind: 'tick'; dt: number }
   | { kind: 'toggle-pause' }
   | { kind: 'toggle-debug' }
+  | { kind: 'play-bfs' }
 
 type Event =            // facts for the shell (UI, metrics); never commands
   | { kind: 'placement-rejected'; error: PlacementError }
@@ -132,6 +133,7 @@ function update(state: GameState, msg: Msg): [GameState, readonly Event[]]
 - **Pausa (P)** es un `Msg` (se puede construir en pausa). **Reiniciar (R)** es de la cáscara: `main.ts` reemplaza el estado con `createGame`; el reductor no guarda el mapa inicial.
 - **Cámara en perspectiva casi cenital.** El raycast se hace contra el plano del suelo y se convierte a la celda.
 - **Modo debug** (tecla para activarlo): heatmap de distancias + flechas del flow field. **El modo debug nunca se recorta.**
+- **Animación del BFS (B):** se reproduce desde `distance` (nivel *k* = celdas con `distance ≤ k`, frontera = `distance === k`), sin instrumentar `graph/`. Vive en el `GameState` (`bfsReplay`) y avanza con `tick` aunque el juego esté en pausa o perdido; activa el debug y apagarlo la cancela.
 - **Gameplay** en escalera, cada peldaño jugable: sandbox → vida de base + oleadas → torres con disparo instantáneo (sin proyectiles) → límite de torres o dinero.
 - **i18n:** módulo propio pequeño y tipado (`t('key')`), español por defecto, con selector es/en. Migrar a LinguiJS queda como mejora para después de la exposición.
 - **Deploy:** el proyecto se construye pensando en GitHub Pages (`base` configurable en Vite), pero es lo último. Si no hay tiempo, se presenta en local.

@@ -1,4 +1,4 @@
-import { maxDistance } from '../game/debug'
+import { bfsReplayLevel, frontierSize, maxDistance } from '../game/debug'
 import type { Event, GameState, PlacementError } from '../game/state'
 import type { ConnectedGrid } from '../graph/connectivity'
 import { type Key, t } from '../i18n'
@@ -44,11 +44,13 @@ export function createHud(container: HTMLElement): Hud {
   const scaleMin = element('span', '')
   const scaleMax = element('span', '')
   const arrowsNote = element('div', 'hud-debug-note')
+  // BFS replay progress: only while it plays.
+  const replay = element('div', 'hud-debug-replay')
   legendTitle.textContent = t('debug.title')
   scaleMin.textContent = '0'
   arrowsNote.textContent = t('debug.arrows')
   scale.append(scaleMin, scaleMax)
-  legend.append(legendTitle, ramp, scale, arrowsNote)
+  legend.append(legendTitle, ramp, scale, arrowsNote, replay)
   legend.hidden = true
 
   // The overlay goes first so the panels stay readable on top of it.
@@ -112,12 +114,24 @@ export function createHud(container: HTMLElement): Hud {
       )
 
       const lost = state.phase.kind === 'lost'
-      overlay.hidden = !lost && !state.paused
+      const level = bfsReplayLevel(state)
+      // The BFS replay is usually shown paused; the overlay would cover the middle of the board.
+      overlay.hidden = (!lost && !state.paused) || level !== undefined
       overlay.classList.toggle('lost', lost)
       setText(overlayTitle, lost ? t('overlay.lost', { wave: state.wave }) : t('overlay.paused'))
       setText(overlayHint, lost ? t('overlay.restart') : '')
 
       legend.hidden = !state.debug
+      replay.hidden = level === undefined
+      if (level !== undefined)
+        setText(
+          replay,
+          t('debug.replay', {
+            level,
+            max: maxDistance(state.world),
+            frontier: frontierSize(state.world, level),
+          }),
+        )
       // The maximum only changes with the world, so the DOM is touched only then.
       if (!state.debug || state.world === legendWorld) return
       legendWorld = state.world

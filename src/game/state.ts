@@ -50,6 +50,11 @@ export type GameState = {
   readonly phase: Phase
   readonly paused: boolean
   readonly debug: boolean
+  /**
+   * Debug replay of the BFS from the goal, `elapsed` seconds in. It only needs the time: the
+   * level shown follows from it, and the cells of each level from the flow field distances.
+   */
+  readonly bfsReplay: { readonly elapsed: number } | undefined
 }
 
 export type Msg =
@@ -58,6 +63,8 @@ export type Msg =
   | { readonly kind: 'tick'; readonly dt: number }
   | { readonly kind: 'toggle-pause' }
   | { readonly kind: 'toggle-debug' }
+  /** Turns debug on and replays the BFS level by level, from the goal. */
+  | { readonly kind: 'play-bfs' }
 
 export type PlacementError =
   | { readonly kind: 'is-spawn' }

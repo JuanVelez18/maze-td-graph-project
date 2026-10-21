@@ -13,6 +13,7 @@ export function testRules(overrides: Partial<GameRules> = {}): GameRules {
     waveBreak: 1,
     firstWaveSize: 1000,
     waveGrowth: 0,
+    bfsLevelsPerSecond: 1,
     ...overrides,
   }
 }

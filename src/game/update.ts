@@ -27,7 +27,10 @@ export function update(state: GameState, msg: Msg): [GameState, readonly Event[]
       if (lost) return [state, []]
       return [{ ...state, paused: !state.paused }, []]
     case 'toggle-debug':
-      return [{ ...state, debug: !state.debug }, []]
+      // The replay draws over the debug view, so turning debug off also stops it.
+      return [{ ...state, debug: !state.debug, bfsReplay: undefined }, []]
+    case 'play-bfs':
+      return [{ ...state, debug: true, bfsReplay: { elapsed: 0 } }, []]
     default:
       return assertNever(msg)
   }

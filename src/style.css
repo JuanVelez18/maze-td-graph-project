@@ -152,6 +152,19 @@ canvas {
   font-weight: 500;
 }
 
+/* Same color as the frontier tiles (COLORS.frontier in `render/scene.ts`). */
+.hud-debug-replay {
+  margin-top: 0.4rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #22e5ff;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-debug-replay[hidden] {
+  display: none;
+}
+
 .hud-toast {
   position: absolute;
   top: 1rem;

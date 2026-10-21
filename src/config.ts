@@ -23,6 +23,8 @@ export type GameRules = {
   readonly firstWaveSize: number
   /** Extra enemies in each wave after the first. */
   readonly waveGrowth: number
+  /** Speed of the BFS replay (debug mode), in levels per second. */
+  readonly bfsLevelsPerSecond: number
 }
 
 export const mapConfig: MapConfig = {
@@ -43,4 +45,5 @@ export const rules: GameRules = {
   waveBreak: 4,
   firstWaveSize: 5,
   waveGrowth: 3,
+  bfsLevelsPerSecond: 4,
 }
