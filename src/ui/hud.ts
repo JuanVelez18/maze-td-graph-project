@@ -1,4 +1,6 @@
-import type { Event, PlacementError } from '../game/state'
+import { maxDistance } from '../game/debug'
+import type { Event, GameState, PlacementError } from '../game/state'
+import type { ConnectedGrid } from '../graph/connectivity'
 import { type Key, t } from '../i18n'
 import { assertNever } from '../shared/assert'
 
@@ -7,7 +9,11 @@ export type ShellEvent =
   | Exclude<Event, { kind: 'path-recomputed' }>
   | { readonly kind: 'path-recomputed'; readonly visited: number; readonly ms: number }
 
-export type Hud = { readonly handle: (event: ShellEvent) => void }
+export type Hud = {
+  readonly handle: (event: ShellEvent) => void
+  /** Shows the parts of the HUD that follow the state (the debug legend). Cheap to call every frame. */
+  readonly render: (state: GameState) => void
+}
 
 const TOAST_MS = 2000
 
@@ -17,8 +23,26 @@ export function createHud(container: HTMLElement): Hud {
   const metrics = element('div', 'hud-metrics')
   const toast = element('div', 'hud-toast')
   help.textContent = t('help.controls')
-  root.append(help, metrics, toast)
+
+  // Debug legend: what the heatmap colors and the arrows mean.
+  const legend = element('div', 'hud-debug')
+  const legendTitle = element('div', 'hud-debug-title')
+  const ramp = element('div', 'hud-debug-ramp')
+  const scale = element('div', 'hud-debug-scale')
+  const scaleMin = element('span', '')
+  const scaleMax = element('span', '')
+  const arrowsNote = element('div', 'hud-debug-note')
+  legendTitle.textContent = t('debug.title')
+  scaleMin.textContent = '0'
+  arrowsNote.textContent = t('debug.arrows')
+  scale.append(scaleMin, scaleMax)
+  legend.append(legendTitle, ramp, scale, arrowsNote)
+  legend.hidden = true
+
+  root.append(help, metrics, legend, toast)
   container.append(root)
+
+  let legendWorld: ConnectedGrid | undefined
 
   let toastTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -48,6 +72,13 @@ export function createHud(container: HTMLElement): Hud {
           assertNever(event)
       }
     },
+    render(state) {
+      legend.hidden = !state.debug
+      // The maximum only changes with the world, so the DOM is touched only then.
+      if (!state.debug || state.world === legendWorld) return
+      legendWorld = state.world
+      scaleMax.textContent = t('debug.steps', { max: maxDistance(state.world) })
+    },
   }
 }
 
@@ -68,7 +99,7 @@ function errorKey(error: PlacementError): Key {
   }
 }
 
-function element(tag: 'div', className: string): HTMLElement {
+function element(tag: 'div' | 'span', className: string): HTMLElement {
   const el = document.createElement(tag)
   el.className = className
   return el

@@ -58,6 +58,7 @@ function frame(now: number) {
   last = now
   for (const msg of queue.splice(0)) for (const event of dispatch(msg)) hud.handle(event)
   scene.render(state, hover)
+  hud.render(state)
   requestAnimationFrame(frame)
 }
 requestAnimationFrame(frame)

@@ -1,5 +1,8 @@
 import * as THREE from 'three'
+import { maxDistance } from '../game/debug'
 import type { Enemy, GameState } from '../game/state'
+import type { ConnectedGrid } from '../graph/connectivity'
+import { distanceTo, nextStep } from '../graph/flow-field'
 import { type CellIndex, cellAt, cellCoords, type Grid, isWall } from '../graph/grid'
 
 export type Scene = {
@@ -16,9 +19,21 @@ const COLORS = {
   spawn: 0x2ecc71,
   goal: 0xff4d4d,
   tower: 0x4da3ff,
-  enemy: 0xffd23f,
+  // White, so enemies stand out on the dark floor and on every heatmap color.
+  enemy: 0xffffff,
   hover: 0xffffff,
+  arrow: 0x111318,
+  unreachable: 0x16181d,
 }
+/**
+ * Debug heatmap, from the goal (distance 0) to the farthest cell. No stop is dark, so the
+ * arrows stay readable everywhere. Keep in sync with `.hud-debug-ramp` in `style.css`.
+ */
+const HEAT_NEAR = new THREE.Color(0xffe14d)
+const HEAT_MID = new THREE.Color(0xff7a3d)
+const HEAT_FAR = new THREE.Color(0x9b5cff)
+/** Arrows lie just above the tiles (whose top is y = 0) so the two do not z-fight. */
+const ARROW_LIFT = 0.01
 const TILE_GAP = 0.08
 const TILE_HEIGHT = 0.1
 const TOWER_SIZE = 0.86
@@ -29,8 +44,8 @@ const ENEMY_CAPACITY = 64
 const FOV = 45
 /** Angle between the camera and the vertical: small, so the board reads almost top-down. */
 const TILT = THREE.MathUtils.degToRad(18)
-/** Extra room around the board so it does not touch the screen edges. */
-const MARGIN = 1.12
+/** Extra room around the board so it does not touch the screen edges or hide under the HUD. */
+const MARGIN = 1.3
 
 export function createScene(container: HTMLElement, initial: GameState): Scene {
   const { width, height } = initial.world.grid
@@ -63,7 +78,7 @@ export function createScene(container: HTMLElement, initial: GameState): Scene {
       if (cell !== undefined) allCells.push(cell)
     }
 
-  // Floor: one instance per cell, colored per instance.
+  // Floor: one instance per cell, colored per instance (the debug heatmap rewrites the colors).
   const tiles = new THREE.InstancedMesh(
     new THREE.BoxGeometry(1 - TILE_GAP, TILE_HEIGHT, 1 - TILE_GAP),
     new THREE.MeshLambertMaterial(),
@@ -74,10 +89,83 @@ export function createScene(container: HTMLElement, initial: GameState): Scene {
   allCells.forEach((cell, i) => {
     const center = cellCenter(initial.world.grid, cell)
     tiles.setMatrixAt(i, matrix.makeTranslation(center.x, -TILE_HEIGHT / 2, center.z))
-    const hex = cell === goal ? COLORS.goal : spawns.includes(cell) ? COLORS.spawn : COLORS.floor
-    tiles.setColorAt(i, color.setHex(hex))
   })
   scene.add(tiles)
+
+  /** Heatmap color for a normalized distance `t` in [0, 1]. */
+  const heatInto = (t: number, target: THREE.Color): THREE.Color =>
+    t < 0.5
+      ? target.lerpColors(HEAT_NEAR, HEAT_MID, t * 2)
+      : target.lerpColors(HEAT_MID, HEAT_FAR, (t - 0.5) * 2)
+
+  let tilesWorld: ConnectedGrid | undefined
+  let tilesDebug: boolean | undefined
+  const syncTiles = (world: ConnectedGrid, debug: boolean) => {
+    // Only a new world (a tower placed or sold) or the debug toggle can change the colors.
+    if (world === tilesWorld && debug === tilesDebug) return
+    tilesWorld = world
+    tilesDebug = debug
+    const max = Math.max(maxDistance(world), 1)
+    allCells.forEach((cell, i) => {
+      if (cell === goal) color.setHex(COLORS.goal)
+      else if (spawns.includes(cell)) color.setHex(COLORS.spawn)
+      else if (!debug) color.setHex(COLORS.floor)
+      else {
+        const distance = distanceTo(world.field, cell)
+        if (distance === undefined) color.setHex(COLORS.unreachable)
+        else heatInto(distance / max, color)
+      }
+      tiles.setColorAt(i, color)
+    })
+    if (tiles.instanceColor) tiles.instanceColor.needsUpdate = true
+  }
+  // Colors must exist before the first frame: the shader is compiled with or without them.
+  syncTiles(initial.world, initial.debug)
+
+  // Flow field arrows: a flat arrow per cell, pointing at the next cell of a shortest path.
+  const arrowShape = new THREE.Shape()
+    .moveTo(-0.3, -0.06)
+    .lineTo(0.04, -0.06)
+    .lineTo(0.04, -0.18)
+    .lineTo(0.32, 0)
+    .lineTo(0.04, 0.18)
+    .lineTo(0.04, 0.06)
+    .lineTo(-0.3, 0.06)
+    .closePath()
+  // The shape is drawn in the XY plane pointing at +X; lay it on the floor (XZ), facing up.
+  const arrowGeometry = new THREE.ShapeGeometry(arrowShape).rotateX(-Math.PI / 2)
+  const arrows = new THREE.InstancedMesh(
+    arrowGeometry,
+    new THREE.MeshBasicMaterial({ color: COLORS.arrow }),
+    allCells.length,
+  )
+  arrows.count = 0
+  arrows.frustumCulled = false
+  arrows.visible = false
+  scene.add(arrows)
+
+  const up = new THREE.Vector3(0, 1, 0)
+  const rotation = new THREE.Quaternion()
+  const unitScale = new THREE.Vector3(1, 1, 1)
+  const arrowPosition = new THREE.Vector3()
+  let arrowsWorld: ConnectedGrid | undefined
+  const syncArrows = (world: ConnectedGrid) => {
+    if (world === arrowsWorld) return
+    arrowsWorld = world
+    let count = 0
+    for (const cell of allCells) {
+      const next = nextStep(world.field, cell)
+      if (next === undefined) continue
+      const a = cellCoords(world.grid, cell)
+      const b = cellCoords(world.grid, next)
+      // Turning +X by an angle φ around Y gives (cos φ, -sin φ) on (x, z), hence the minus.
+      rotation.setFromAxisAngle(up, Math.atan2(-(b.y - a.y), b.x - a.x))
+      cellCenterInto(world.grid, cell, arrowPosition).setY(ARROW_LIFT)
+      arrows.setMatrixAt(count++, matrix.compose(arrowPosition, rotation, unitScale))
+    }
+    arrows.count = count
+    arrows.instanceMatrix.needsUpdate = true
+  }
 
   // Towers: capacity for every cell, but only `count` instances are drawn.
   const towers = new THREE.InstancedMesh(
@@ -165,6 +253,9 @@ export function createScene(container: HTMLElement, initial: GameState): Scene {
   return {
     render(state, hover) {
       syncTowers(state.world.grid)
+      syncTiles(state.world, state.debug)
+      arrows.visible = state.debug
+      if (state.debug) syncArrows(state.world)
       syncEnemies(state.world.grid, state.enemies)
       hoverMesh.visible = hover !== undefined
       if (hover !== undefined) {

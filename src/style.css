@@ -52,6 +52,43 @@ canvas {
   display: none;
 }
 
+.hud-debug {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 22rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.4rem;
+  background: rgb(0 0 0 / 0.7);
+}
+
+.hud-debug[hidden] {
+  display: none;
+}
+
+.hud-debug-title {
+  margin-bottom: 0.4rem;
+}
+
+/* Same stops as the heatmap in `render/scene.ts` (HEAT_NEAR, HEAT_MID, HEAT_FAR). */
+.hud-debug-ramp {
+  height: 1rem;
+  border-radius: 0.2rem;
+  background: linear-gradient(to right, #ffe14d, #ff7a3d, #9b5cff);
+}
+
+.hud-debug-scale {
+  display: flex;
+  justify-content: space-between;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-debug-note {
+  margin-top: 0.4rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
 .hud-toast {
   position: absolute;
   top: 1rem;

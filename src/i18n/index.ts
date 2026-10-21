@@ -6,6 +6,9 @@ const es = {
   'error.enemy-on-cell': 'Hay un enemigo en esa celda',
   'error.blocks-path': 'Bloquearía el camino a la meta',
   'metrics.bfs': 'BFS: {visited} nodos · {ms} ms',
+  'debug.title': 'Modo debug · BFS desde la meta',
+  'debug.steps': '{max} pasos',
+  'debug.arrows': 'Flecha = siguiente paso',
 }
 
 export type Key = keyof typeof es
@@ -19,6 +22,9 @@ const en: Record<Key, string> = {
   'error.enemy-on-cell': 'An enemy is on that cell',
   'error.blocks-path': 'It would block the path to the goal',
   'metrics.bfs': 'BFS: {visited} nodes · {ms} ms',
+  'debug.title': 'Debug mode · BFS from the goal',
+  'debug.steps': '{max} steps',
+  'debug.arrows': 'Arrow = next step',
 }
 
 const dictionaries: Record<Locale, Record<Key, string>> = { es, en }
