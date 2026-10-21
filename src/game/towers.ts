@@ -1,11 +1,12 @@
 import { type ConnectedGrid, connect } from '../graph/connectivity'
 import { type CellIndex, isWall, setWall } from '../graph/grid'
 import { err, ok, type Result } from '../shared/result'
+import { occupiedCells } from './enemies'
 import type { GameState, PlacementError } from './state'
 
 /**
  * A tower is a wall: it removes `cell` and its edges from the graph. The new grid is only
- * accepted if one BFS from the goal still reaches every spawn.
+ * accepted if one BFS from the goal still reaches every spawn and every live enemy.
  */
 export function tryPlaceTower(
   state: GameState,
@@ -15,8 +16,12 @@ export function tryPlaceTower(
   if (spawns.includes(cell)) return err({ kind: 'is-spawn' })
   if (cell === goal) return err({ kind: 'is-goal' })
   if (isWall(state.world.grid, cell)) return err({ kind: 'occupied' })
+  if (state.enemies.some((enemy) => occupiedCells(enemy).includes(cell)))
+    return err({ kind: 'enemy-on-cell' })
 
-  const connected = connect(setWall(state.world.grid, cell, true), goal, spawns)
+  // An enemy only needs a path from the cell it walks to; it never turns back.
+  const sources = [...new Set([...spawns, ...state.enemies.map((enemy) => enemy.to)])]
+  const connected = connect(setWall(state.world.grid, cell, true), goal, sources)
   if (!connected.ok) return err({ kind: 'blocks-path', cells: connected.error.cells })
 
   return ok(connected.value)

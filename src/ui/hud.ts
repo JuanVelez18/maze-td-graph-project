@@ -35,6 +35,9 @@ export function createHud(container: HTMLElement): Hud {
         case 'placement-rejected':
           showToast(t(errorKey(event.error)))
           break
+        case 'enemy-reached-goal':
+          // Nothing to show until the base has life (block 5).
+          break
         case 'path-recomputed':
           metrics.textContent = t('metrics.bfs', {
             visited: event.visited,
@@ -56,6 +59,8 @@ function errorKey(error: PlacementError): Key {
       return 'error.is-goal'
     case 'occupied':
       return 'error.occupied'
+    case 'enemy-on-cell':
+      return 'error.enemy-on-cell'
     case 'blocks-path':
       return 'error.blocks-path'
     default:

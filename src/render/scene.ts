@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import type { GameState } from '../game/state'
+import type { Enemy, GameState } from '../game/state'
 import { type CellIndex, cellAt, cellCoords, type Grid, isWall } from '../graph/grid'
 
 export type Scene = {
@@ -16,12 +16,16 @@ const COLORS = {
   spawn: 0x2ecc71,
   goal: 0xff4d4d,
   tower: 0x4da3ff,
+  enemy: 0xffd23f,
   hover: 0xffffff,
 }
 const TILE_GAP = 0.08
 const TILE_HEIGHT = 0.1
 const TOWER_SIZE = 0.86
 const TOWER_HEIGHT = 0.8
+const ENEMY_SIZE = 0.45
+/** Enemies the mesh holds at first; it doubles when a frame needs more. */
+const ENEMY_CAPACITY = 64
 const FOV = 45
 /** Angle between the camera and the vertical: small, so the board reads almost top-down. */
 const TILT = THREE.MathUtils.degToRad(18)
@@ -46,10 +50,12 @@ export function createScene(container: HTMLElement, initial: GameState): Scene {
   const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 500)
 
   // Board: grid (x, y) maps to world (x, z), centered on the origin.
-  const cellCenter = (grid: Grid, cell: CellIndex): THREE.Vector3 => {
+  const cellCenterInto = (grid: Grid, cell: CellIndex, target: THREE.Vector3): THREE.Vector3 => {
     const { x, y } = cellCoords(grid, cell)
-    return new THREE.Vector3(x - width / 2 + 0.5, 0, y - height / 2 + 0.5)
+    return target.set(x - width / 2 + 0.5, 0, y - height / 2 + 0.5)
   }
+  const cellCenter = (grid: Grid, cell: CellIndex) =>
+    cellCenterInto(grid, cell, new THREE.Vector3())
   const allCells: CellIndex[] = []
   for (let y = 0; y < height; y++)
     for (let x = 0; x < width; x++) {
@@ -83,6 +89,37 @@ export function createScene(container: HTMLElement, initial: GameState): Scene {
   // The bounding sphere would be computed once for the first towers and then go stale.
   towers.frustumCulled = false
   scene.add(towers)
+
+  // Enemies: their positions change every frame, so all instances are rewritten each render.
+  const enemyGeometry = new THREE.BoxGeometry(ENEMY_SIZE, ENEMY_SIZE, ENEMY_SIZE)
+  const enemyMaterial = new THREE.MeshLambertMaterial({ color: COLORS.enemy })
+  const createEnemyMesh = (capacity: number) => {
+    const mesh = new THREE.InstancedMesh(enemyGeometry, enemyMaterial, capacity)
+    mesh.frustumCulled = false
+    scene.add(mesh)
+    return mesh
+  }
+  let enemyMesh = createEnemyMesh(ENEMY_CAPACITY)
+  const from = new THREE.Vector3()
+  const to = new THREE.Vector3()
+
+  const syncEnemies = (grid: Grid, enemies: readonly Enemy[]) => {
+    // An InstancedMesh cannot grow, so a bigger one replaces it (geometry and material are shared).
+    if (enemies.length > enemyMesh.instanceMatrix.count) {
+      scene.remove(enemyMesh)
+      enemyMesh.dispose()
+      enemyMesh = createEnemyMesh(Math.max(enemies.length, enemyMesh.instanceMatrix.count * 2))
+    }
+    enemies.forEach((enemy, i) => {
+      // Walk in a straight line between the two cell centers.
+      cellCenterInto(grid, enemy.from, from)
+      cellCenterInto(grid, enemy.to, to)
+      from.lerp(to, enemy.progress)
+      enemyMesh.setMatrixAt(i, matrix.makeTranslation(from.x, ENEMY_SIZE / 2, from.z))
+    })
+    enemyMesh.count = enemies.length
+    enemyMesh.instanceMatrix.needsUpdate = true
+  }
 
   const hoverMesh = new THREE.Mesh(
     new THREE.BoxGeometry(1, TOWER_HEIGHT + 0.04, 1),
@@ -128,6 +165,7 @@ export function createScene(container: HTMLElement, initial: GameState): Scene {
   return {
     render(state, hover) {
       syncTowers(state.world.grid)
+      syncEnemies(state.world.grid, state.enemies)
       hoverMesh.visible = hover !== undefined
       if (hover !== undefined) {
         const center = cellCenter(state.world.grid, hover)

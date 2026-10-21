@@ -11,9 +11,11 @@ const MAP = `
   S....
 `
 
+const RULES = { enemySpeed: 1, spawnInterval: 1 }
+
 function setup(text = MAP) {
   const { grid, goal, spawns, at } = parseMap(text)
-  return { state: createGameFromGrid(grid, { spawns, goal }), at }
+  return { state: createGameFromGrid(grid, { spawns, goal }, RULES), at }
 }
 
 describe('update: place-tower', () => {
@@ -80,11 +82,6 @@ describe('update: other messages', () => {
     expect(on.debug).toBe(true)
     expect(off.debug).toBe(false)
   })
-
-  it('leaves the state untouched on tick', () => {
-    const { state } = setup()
-    expect(update(state, { kind: 'tick', dt: 0.016 })).toEqual([state, []])
-  })
 })
 
 describe('createGame', () => {
@@ -92,22 +89,21 @@ describe('createGame', () => {
     const { grid, goal, spawns } = parseMap(`
       S#G
     `)
-    expect(() => createGameFromGrid(grid, { spawns, goal })).toThrow()
+    expect(() => createGameFromGrid(grid, { spawns, goal }, RULES)).toThrow()
   })
 
   it('throws when a configured cell is outside the map', () => {
     const config = { width: 3, height: 3, spawns: [{ x: 3, y: 0 }], goal: { x: 0, y: 0 } }
-    expect(() => createGame(config)).toThrow()
+    expect(() => createGame(config, RULES)).toThrow()
   })
 
-  it('builds an open grid from the configuration', () => {
-    const state = createGame({
-      width: 3,
-      height: 2,
-      spawns: [{ x: 0, y: 0 }],
-      goal: { x: 2, y: 1 },
-    })
+  it('builds an open grid without enemies from the configuration', () => {
+    const state = createGame(
+      { width: 3, height: 2, spawns: [{ x: 0, y: 0 }], goal: { x: 2, y: 1 } },
+      RULES,
+    )
     expect(state.world.field.visited).toBe(6)
+    expect(state.enemies).toEqual([])
     expect(state.debug).toBe(false)
   })
 })

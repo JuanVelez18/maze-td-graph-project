@@ -1,5 +1,5 @@
 import './style.css'
-import { mapConfig } from './config'
+import { mapConfig, rules } from './config'
 import { createGame } from './game/map'
 import type { GameState, Msg } from './game/state'
 import { update } from './game/update'
@@ -12,7 +12,10 @@ import { createHud, type ShellEvent } from './ui/hud'
 const app = document.querySelector<HTMLDivElement>('#app')
 if (!app) throw new Error('Missing #app element')
 
-let state: GameState = createGame(mapConfig)
+/** Longest step the game clock takes, so a frame after a hidden tab does not teleport enemies. */
+const MAX_DT = 0.1
+
+let state: GameState = createGame(mapConfig, rules)
 let hover: CellIndex | undefined
 const queue: Msg[] = []
 
@@ -51,7 +54,7 @@ function dispatch(msg: Msg): readonly ShellEvent[] {
 
 let last = performance.now()
 function frame(now: number) {
-  queue.push({ kind: 'tick', dt: (now - last) / 1000 })
+  queue.push({ kind: 'tick', dt: Math.min((now - last) / 1000, MAX_DT) })
   last = now
   for (const msg of queue.splice(0)) for (const event of dispatch(msg)) hud.handle(event)
   scene.render(state, hover)

@@ -8,6 +8,13 @@ export type MapConfig = {
   readonly goal: CellCoords
 }
 
+export type GameRules = {
+  /** Enemy speed in cells (edges) per second. */
+  readonly enemySpeed: number
+  /** Seconds between two enemies; the spawns take turns. */
+  readonly spawnInterval: number
+}
+
 export const mapConfig: MapConfig = {
   width: 20,
   height: 12,
@@ -16,4 +23,9 @@ export const mapConfig: MapConfig = {
     { x: 0, y: 9 },
   ],
   goal: { x: 19, y: 6 },
+}
+
+export const rules: GameRules = {
+  enemySpeed: 2.5,
+  spawnInterval: 1.2,
 }

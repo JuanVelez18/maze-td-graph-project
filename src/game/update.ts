@@ -1,5 +1,6 @@
 import type { ConnectedGrid } from '../graph/connectivity'
 import { assertNever } from '../shared/assert'
+import { tick } from './enemies'
 import type { Event, GameState, Msg } from './state'
 import { sellTower, tryPlaceTower } from './towers'
 
@@ -17,7 +18,7 @@ export function update(state: GameState, msg: Msg): [GameState, readonly Event[]
       return withWorld(state, sold)
     }
     case 'tick':
-      return [state, []]
+      return tick(state, msg.dt)
     case 'toggle-debug':
       return [{ ...state, debug: !state.debug }, []]
     default:
