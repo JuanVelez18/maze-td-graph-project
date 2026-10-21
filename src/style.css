@@ -9,11 +9,66 @@ html,
 body {
   margin: 0;
   height: 100%;
+  overflow: hidden;
 }
 
 #app {
+  position: relative;
   height: 100%;
-  display: grid;
-  place-items: center;
-  font-size: 2rem;
+}
+
+canvas {
+  display: block;
+}
+
+/* HUD: large, high-contrast text so it survives screen sharing. */
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.hud-help,
+.hud-metrics {
+  position: absolute;
+  left: 1rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.4rem;
+  background: rgb(0 0 0 / 0.6);
+}
+
+.hud-help {
+  top: 1rem;
+}
+
+.hud-metrics {
+  bottom: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-metrics:empty {
+  display: none;
+}
+
+.hud-toast {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translate(-50%, -150%);
+  padding: 0.6rem 1.2rem;
+  border-radius: 0.4rem;
+  background: #ff4d4d;
+  color: #fff;
+  font-size: 1.6rem;
+  opacity: 0;
+  transition:
+    transform 0.2s,
+    opacity 0.2s;
+}
+
+.hud-toast.visible {
+  transform: translate(-50%, 0);
+  opacity: 1;
 }
