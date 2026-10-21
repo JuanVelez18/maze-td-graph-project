@@ -39,9 +39,22 @@ canvas.addEventListener('pointerdown', (e) => {
 })
 canvas.addEventListener('contextmenu', (e) => e.preventDefault())
 window.addEventListener('keydown', (e) => {
-  if (e.key.toLowerCase() === 'd' && !e.repeat) queue.push({ kind: 'toggle-debug' })
+  if (e.repeat) return
+  const key = e.key.toLowerCase()
+  if (key === 'd') queue.push({ kind: 'toggle-debug' })
+  else if (key === 'p') queue.push({ kind: 'toggle-pause' })
+  else if (key === 'r') restart()
 })
 window.addEventListener('resize', () => scene.resize())
+
+/**
+ * Starts a new game. Only the shell holds mutable state, so restarting is replacing it; the
+ * scene follows because it syncs by reference to `state.world`.
+ */
+function restart() {
+  queue.length = 0
+  state = createGame(mapConfig, rules)
+}
 
 /** Runs one message through the reducer, adding the measured time to recompute events. */
 function dispatch(msg: Msg): readonly ShellEvent[] {

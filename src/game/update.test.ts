@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { isWall } from '../graph/grid'
 import { parseMap } from '../graph/test-map'
 import { createGame, createGameFromGrid } from './map'
+import { testRules } from './test-rules'
 import { update } from './update'
 
 // Spawns at (0,0) and (0,2); the wall column at x = 2 leaves a single gap at (2,2).
@@ -11,7 +12,7 @@ const MAP = `
   S....
 `
 
-const RULES = { enemySpeed: 1, spawnInterval: 1 }
+const RULES = testRules()
 
 function setup(text = MAP) {
   const { grid, goal, spawns, at } = parseMap(text)

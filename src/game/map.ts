@@ -21,6 +21,10 @@ export function createGameFromGrid(grid: Grid, map: GameMap, rules: GameRules): 
     spawnTimer: 0,
     nextSpawn: 0,
     nextEnemyId: 0,
+    life: rules.baseLife,
+    wave: 0,
+    phase: { kind: 'break', timer: rules.firstBreak },
+    paused: false,
     debug: false,
   }
 }

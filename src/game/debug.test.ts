@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { parseMap } from '../graph/test-map'
 import { maxDistance } from './debug'
 import { createGameFromGrid } from './map'
+import { testRules } from './test-rules'
 import { update } from './update'
 
-const RULES = { enemySpeed: 1, spawnInterval: 1 }
+const RULES = testRules()
 
 function setup(text: string) {
   const { grid, goal, spawns, at } = parseMap(text)

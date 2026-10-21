@@ -11,7 +11,7 @@ export type ShellEvent =
 
 export type Hud = {
   readonly handle: (event: ShellEvent) => void
-  /** Shows the parts of the HUD that follow the state (the debug legend). Cheap to call every frame. */
+  /** Shows the parts of the HUD that follow the state. Cheap to call every frame. */
   readonly render: (state: GameState) => void
 }
 
@@ -23,6 +23,18 @@ export function createHud(container: HTMLElement): Hud {
   const metrics = element('div', 'hud-metrics')
   const toast = element('div', 'hud-toast')
   help.textContent = t('help.controls')
+
+  // Base life and wave, under the controls.
+  const status = element('div', 'hud-status')
+  const life = element('span', 'hud-status-life')
+  const wave = element('span', '')
+  status.append(life, wave)
+
+  // Big centered message while paused or after losing.
+  const overlay = element('div', 'hud-overlay')
+  const overlayTitle = element('div', 'hud-overlay-title')
+  const overlayHint = element('div', 'hud-overlay-hint')
+  overlay.append(overlayTitle, overlayHint)
 
   // Debug legend: what the heatmap colors and the arrows mean.
   const legend = element('div', 'hud-debug')
@@ -39,15 +51,24 @@ export function createHud(container: HTMLElement): Hud {
   legend.append(legendTitle, ramp, scale, arrowsNote)
   legend.hidden = true
 
-  root.append(help, metrics, legend, toast)
+  // The overlay goes first so the panels stay readable on top of it.
+  root.append(overlay, help, status, metrics, legend, toast)
   container.append(root)
 
   let legendWorld: ConnectedGrid | undefined
+  // `render` runs every frame; these remember what is on screen to touch the DOM only on change.
+  const shown = new Map<HTMLElement, string>()
+  const setText = (el: HTMLElement, text: string) => {
+    if (shown.get(el) === text) return
+    shown.set(el, text)
+    el.textContent = text
+  }
 
   let toastTimer: ReturnType<typeof setTimeout> | undefined
 
-  const showToast = (text: string) => {
+  const showToast = (text: string, tone: 'error' | 'info') => {
     toast.textContent = text
+    toast.classList.toggle('info', tone === 'info')
     toast.classList.add('visible')
     clearTimeout(toastTimer)
     toastTimer = setTimeout(() => toast.classList.remove('visible'), TOAST_MS)
@@ -57,10 +78,19 @@ export function createHud(container: HTMLElement): Hud {
     handle(event) {
       switch (event.kind) {
         case 'placement-rejected':
-          showToast(t(errorKey(event.error)))
+          showToast(t(errorKey(event.error)), 'error')
           break
         case 'enemy-reached-goal':
-          // Nothing to show until the base has life (block 5).
+          // Flash the life counter; the new value itself comes from `render`.
+          life.classList.remove('hit')
+          void life.offsetWidth // restart the CSS animation
+          life.classList.add('hit')
+          break
+        case 'wave-started':
+          showToast(t('wave.started', { wave: event.wave }), 'info')
+          break
+        case 'game-over':
+          // The overlay follows `state.phase` in `render`.
           break
         case 'path-recomputed':
           metrics.textContent = t('metrics.bfs', {
@@ -73,6 +103,20 @@ export function createHud(container: HTMLElement): Hud {
       }
     },
     render(state) {
+      setText(life, t('status.life', { life: state.life }))
+      setText(
+        wave,
+        state.phase.kind === 'break'
+          ? t('status.next', { seconds: Math.ceil(state.phase.timer) })
+          : t('status.wave', { wave: state.wave }),
+      )
+
+      const lost = state.phase.kind === 'lost'
+      overlay.hidden = !lost && !state.paused
+      overlay.classList.toggle('lost', lost)
+      setText(overlayTitle, lost ? t('overlay.lost', { wave: state.wave }) : t('overlay.paused'))
+      setText(overlayHint, lost ? t('overlay.restart') : '')
+
       legend.hidden = !state.debug
       // The maximum only changes with the world, so the DOM is touched only then.
       if (!state.debug || state.world === legendWorld) return

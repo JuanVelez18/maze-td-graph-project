@@ -43,6 +43,69 @@ canvas {
   top: 1rem;
 }
 
+.hud-status {
+  position: absolute;
+  top: 4.2rem;
+  left: 1rem;
+  display: flex;
+  gap: 1.2rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.4rem;
+  background: rgb(0 0 0 / 0.6);
+  font-size: 1.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-status-life {
+  display: inline-block;
+  color: #ff5c7a;
+}
+
+.hud-status-life.hit {
+  animation: hit 0.4s;
+}
+
+@keyframes hit {
+  from {
+    color: #fff;
+    transform: scale(1.3);
+  }
+}
+
+.hud-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: rgb(0 0 0 / 0.35);
+}
+
+.hud-overlay[hidden] {
+  display: none;
+}
+
+.hud-overlay-title {
+  padding: 0.6rem 1.6rem;
+  border-radius: 0.5rem;
+  background: rgb(0 0 0 / 0.75);
+  font-size: 3.2rem;
+}
+
+.hud-overlay.lost .hud-overlay-title {
+  background: #c62828;
+}
+
+.hud-overlay-hint {
+  font-size: 1.6rem;
+}
+
+.hud-overlay-hint:empty {
+  display: none;
+}
+
 .hud-metrics {
   bottom: 1rem;
   font-variant-numeric: tabular-nums;
@@ -103,6 +166,10 @@ canvas {
   transition:
     transform 0.2s,
     opacity 0.2s;
+}
+
+.hud-toast.info {
+  background: #2f6fed;
 }
 
 .hud-toast.visible {

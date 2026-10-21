@@ -84,11 +84,14 @@ type Msg =
   | { kind: 'place-tower'; cell: CellIndex }
   | { kind: 'sell-tower'; cell: CellIndex }
   | { kind: 'tick'; dt: number }
+  | { kind: 'toggle-pause' }
   | { kind: 'toggle-debug' }
 
 type Event =            // facts for the shell (UI, metrics); never commands
   | { kind: 'placement-rejected'; error: PlacementError }
   | { kind: 'enemy-reached-goal' }
+  | { kind: 'wave-started'; wave: number }
+  | { kind: 'game-over'; wave: number }
   | { kind: 'path-recomputed'; visited: number; ms: number }
 
 function update(state: GameState, msg: Msg): [GameState, readonly Event[]]
@@ -125,6 +128,8 @@ function update(state: GameState, msg: Msg): [GameState, readonly Event[]]
 - **Demo reproducible:** se puede grabar una secuencia de `Msg` y reproducirla como respaldo guionizado para la exposición (bloque 9).
 - Los enemigos se mueven hacia el **centro** de la siguiente celda e interpolan, para no atascarse en los bordes. Un enemigo es una arista en recorrido (`from`, `to`, `progress`) y ocupa ambas celdas; consulta el flow field solo al llegar a `to`, así que un recálculo lo desvía en el siguiente nodo. La conectividad se verifica desde el `to` de cada enemigo.
 - El `dt` de cada `tick` se limita en `main.ts` (`MAX_DT`) para que una pestaña oculta no teletransporte enemigos.
+- **Oleadas:** la fase del juego es una unión `Phase` (`break` con temporizador → `spawning` con enemigos por salir → `lost`). Una oleada termina, y empieza el descanso, solo cuando salieron todos sus enemigos **y** el mapa quedó vacío. Cada enemigo en la meta resta 1 de vida; con `phase = lost` el juego se congela (solo funciona el debug). Números en `config.ts`.
+- **Pausa (P)** es un `Msg` (se puede construir en pausa). **Reiniciar (R)** es de la cáscara: `main.ts` reemplaza el estado con `createGame`; el reductor no guarda el mapa inicial.
 - **Cámara en perspectiva casi cenital.** El raycast se hace contra el plano del suelo y se convierte a la celda.
 - **Modo debug** (tecla para activarlo): heatmap de distancias + flechas del flow field. **El modo debug nunca se recorta.**
 - **Gameplay** en escalera, cada peldaño jugable: sandbox → vida de base + oleadas → torres con disparo instantáneo (sin proyectiles) → límite de torres o dinero.

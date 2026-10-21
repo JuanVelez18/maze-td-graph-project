@@ -24,17 +24,31 @@ export type Enemy = {
   readonly progress: number
 }
 
+/** Where the game is in its cycle of waves. */
+export type Phase =
+  /** Between waves: `timer` seconds until the next one starts. */
+  | { readonly kind: 'break'; readonly timer: number }
+  /** A wave is on: `remaining` of its enemies have yet to appear. */
+  | { readonly kind: 'spawning'; readonly remaining: number }
+  /** The base ran out of life; nothing moves any more. */
+  | { readonly kind: 'lost' }
+
 export type GameState = {
   readonly map: GameMap
   readonly rules: GameRules
   /** The current grid with its flow field. Being a `ConnectedGrid`, every spawn reaches the goal. */
   readonly world: ConnectedGrid
   readonly enemies: readonly Enemy[]
-  /** Seconds until the next enemy appears. */
+  /** Seconds until the next enemy appears, while a wave is spawning. */
   readonly spawnTimer: number
   /** Index in `map.spawns` of the spawn whose turn is next. */
   readonly nextSpawn: number
   readonly nextEnemyId: number
+  readonly life: number
+  /** Number of the current (or last) wave; 0 before the first one. */
+  readonly wave: number
+  readonly phase: Phase
+  readonly paused: boolean
   readonly debug: boolean
 }
 
@@ -42,6 +56,7 @@ export type Msg =
   | { readonly kind: 'place-tower'; readonly cell: CellIndex }
   | { readonly kind: 'sell-tower'; readonly cell: CellIndex }
   | { readonly kind: 'tick'; readonly dt: number }
+  | { readonly kind: 'toggle-pause' }
   | { readonly kind: 'toggle-debug' }
 
 export type PlacementError =
@@ -56,5 +71,7 @@ export type PlacementError =
 export type Event =
   | { readonly kind: 'placement-rejected'; readonly error: PlacementError }
   | { readonly kind: 'enemy-reached-goal' }
+  | { readonly kind: 'wave-started'; readonly wave: number }
+  | { readonly kind: 'game-over'; readonly wave: number }
   /** `visited` comes from the BFS; the shell measures and adds the time. */
   | { readonly kind: 'path-recomputed'; readonly visited: number }

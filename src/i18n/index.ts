@@ -1,5 +1,12 @@
 const es = {
-  'help.controls': 'Clic izq.: torre · Clic der.: vender · D: debug',
+  'help.controls': 'Clic izq.: torre · Clic der.: vender · D: debug · P: pausa · R: reiniciar',
+  'status.life': '♥ {life}',
+  'status.wave': 'Oleada {wave}',
+  'status.next': 'Siguiente oleada en {seconds} s',
+  'wave.started': 'Oleada {wave}',
+  'overlay.paused': 'Pausa',
+  'overlay.lost': 'Perdiste en la oleada {wave}',
+  'overlay.restart': 'R: reiniciar',
   'error.is-spawn': 'No se puede construir sobre un spawn',
   'error.is-goal': 'No se puede construir sobre la meta',
   'error.occupied': 'Ya hay una torre en esa celda',
@@ -15,7 +22,14 @@ export type Key = keyof typeof es
 export type Locale = 'es' | 'en'
 
 const en: Record<Key, string> = {
-  'help.controls': 'Left click: tower · Right click: sell · D: debug',
+  'help.controls': 'Left click: tower · Right click: sell · D: debug · P: pause · R: restart',
+  'status.life': '♥ {life}',
+  'status.wave': 'Wave {wave}',
+  'status.next': 'Next wave in {seconds} s',
+  'wave.started': 'Wave {wave}',
+  'overlay.paused': 'Paused',
+  'overlay.lost': 'You lost on wave {wave}',
+  'overlay.restart': 'R: restart',
   'error.is-spawn': 'Cannot build on a spawn',
   'error.is-goal': 'Cannot build on the goal',
   'error.occupied': 'There is already a tower there',

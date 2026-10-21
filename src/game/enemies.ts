@@ -1,36 +1,37 @@
 import type { ConnectedGrid } from '../graph/connectivity'
 import { nextStep } from '../graph/flow-field'
 import type { CellIndex } from '../graph/grid'
-import type { Enemy, EnemyId, Event, GameState } from './state'
+import type { Enemy, EnemyId } from './state'
 
-/** Advances the game clock by `dt` seconds: enemies walk, then new ones appear. */
-export function tick(state: GameState, dt: number): [GameState, readonly Event[]] {
-  const events: Event[] = []
-  const walked = state.rules.enemySpeed * dt
-  const enemies: Enemy[] = []
-  for (const enemy of state.enemies) {
-    const moved = walk(state.world, enemy, walked)
-    if (moved === undefined) events.push({ kind: 'enemy-reached-goal' })
-    else enemies.push(moved)
+/**
+ * Moves every enemy `distance` cells along the flow field. Enemies that reach the goal leave
+ * the board and are counted in `arrived`.
+ */
+export function moveEnemies(
+  world: ConnectedGrid,
+  enemies: readonly Enemy[],
+  distance: number,
+): { readonly enemies: readonly Enemy[]; readonly arrived: number } {
+  const moved: Enemy[] = []
+  let arrived = 0
+  for (const enemy of enemies) {
+    const next = walk(world, enemy, distance)
+    if (next === undefined) arrived++
+    else moved.push(next)
   }
-
-  let { spawnTimer, nextSpawn, nextEnemyId } = state
-  spawnTimer -= dt
-  while (spawnTimer <= 0) {
-    const spawn = state.map.spawns[nextSpawn]
-    if (spawn === undefined) break
-    enemies.push(spawnEnemy(state.world, spawn, nextEnemyId as EnemyId))
-    nextEnemyId++
-    nextSpawn = (nextSpawn + 1) % state.map.spawns.length
-    spawnTimer += state.rules.spawnInterval
-  }
-
-  return [{ ...state, enemies, spawnTimer, nextSpawn, nextEnemyId }, events]
+  return { enemies: moved, arrived }
 }
 
 /** Cells an enemy stands on; a tower there is rejected. */
 export function occupiedCells(enemy: Enemy): readonly CellIndex[] {
   return [enemy.from, enemy.to]
+}
+
+/** A new enemy on `spawn`, already heading to the first cell of its shortest path. */
+export function spawnEnemy(world: ConnectedGrid, spawn: CellIndex, id: EnemyId): Enemy {
+  const next = nextStep(world.field, spawn)
+  if (next === undefined) throw new Error('A spawn has no path to the goal')
+  return { id, from: spawn, to: next, progress: 0 }
 }
 
 /**
@@ -50,10 +51,4 @@ function walk(world: ConnectedGrid, enemy: Enemy, distance: number): Enemy | und
     progress -= 1
   }
   return { id: enemy.id, from, to, progress }
-}
-
-function spawnEnemy(world: ConnectedGrid, spawn: CellIndex, id: EnemyId): Enemy {
-  const next = nextStep(world.field, spawn)
-  if (next === undefined) throw new Error('A spawn has no path to the goal')
-  return { id, from: spawn, to: next, progress: 0 }
 }

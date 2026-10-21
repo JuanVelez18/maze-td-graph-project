@@ -5,6 +5,7 @@ import type { CellIndex } from '../graph/grid'
 import { parseMap } from '../graph/test-map'
 import { createGameFromGrid } from './map'
 import type { Enemy, EnemyId, GameState } from './state'
+import { testRules } from './test-rules'
 import { update } from './update'
 
 const OPEN = `
@@ -13,9 +14,9 @@ const OPEN = `
   ...G
 `
 
-function setup(text: string, rules: GameRules) {
+function setup(text: string, rules: Partial<GameRules>) {
   const { grid, goal, spawns, at } = parseMap(text)
-  return { state: createGameFromGrid(grid, { spawns, goal }, rules), at }
+  return { state: createGameFromGrid(grid, { spawns, goal }, testRules(rules)), at }
 }
 
 const tick = (state: GameState, dt: number) => update(state, { kind: 'tick', dt })
@@ -31,7 +32,7 @@ describe('tick: spawning', () => {
     const { state, at } = setup(OPEN, { enemySpeed: 1, spawnInterval: 1 })
     const [next, events] = tick(state, 0)
 
-    expect(events).toEqual([])
+    expect(events).toEqual([{ kind: 'wave-started', wave: 1 }])
     expect(next.enemies).toEqual([
       { id: 0, from: at(0, 0), to: step(state, at(0, 0)), progress: 0 },
     ])
