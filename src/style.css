@@ -70,6 +70,10 @@ canvas {
   color: #ffd84d;
 }
 
+.hud-status-seed {
+  opacity: 0.6;
+}
+
 .hud-status-money.gain {
   animation: hit 0.4s;
 }

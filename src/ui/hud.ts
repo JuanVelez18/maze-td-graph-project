@@ -25,6 +25,8 @@ export type Hud = {
   readonly handle: (event: ShellEvent) => void
   /** Shows the parts of the HUD that follow the state. Cheap to call every frame. */
   readonly render: (state: GameState) => void
+  /** Shows the seed of the current map, so a good one can be replayed with `?seed=`. */
+  readonly showSeed: (seed: number) => void
 }
 
 const TOAST_MS = 2000
@@ -61,7 +63,8 @@ export function createHud(container: HTMLElement): Hud {
   const life = element('span', 'hud-status-life')
   const money = element('span', 'hud-status-money')
   const wave = element('span', '')
-  status.append(life, money, wave)
+  const seed = element('span', 'hud-status-seed')
+  status.append(life, money, wave, seed)
 
   // Big centered message while paused or after losing.
   const overlay = element('div', 'hud-overlay')
@@ -174,6 +177,9 @@ export function createHud(container: HTMLElement): Hud {
       if (!state.debug || state.world === legendWorld) return
       legendWorld = state.world
       scaleMax.textContent = t('debug.cost', { max: maxDistance(state.world) })
+    },
+    showSeed(value) {
+      seed.textContent = t('status.seed', { seed: value })
     },
   }
 }

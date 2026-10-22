@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { towerTargets } from '../game/combat'
 import { bfsReplayLevel, maxDistance } from '../game/debug'
 import { enemyPosition } from '../game/enemies'
-import type { GameState } from '../game/state'
+import type { GameMap, GameState } from '../game/state'
 import { enemyHp } from '../game/waves'
 import type { ConnectedGrid } from '../graph/connectivity'
 import { distanceTo, nextStep } from '../graph/flow-field'
@@ -66,7 +66,6 @@ const MARGIN = 1.3
 
 export function createScene(container: HTMLElement, initial: GameState): Scene {
   const { width, height } = initial.world.grid
-  const { spawns, goal } = initial.map
 
   const renderer = new THREE.WebGLRenderer({ antialias: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
@@ -126,8 +125,14 @@ export function createScene(container: HTMLElement, initial: GameState): Scene {
   let tilesDebug: boolean | undefined
   let tilesLevel: number | undefined
   /** `level` is the BFS replay level, or `undefined` to show the whole field. */
-  const syncTiles = (world: ConnectedGrid, debug: boolean, level: number | undefined) => {
-    // Only a new world (a tower placed or sold), the debug toggle or the replay change the colors.
+  const syncTiles = (
+    { spawns, goal }: GameMap,
+    world: ConnectedGrid,
+    debug: boolean,
+    level: number | undefined,
+  ) => {
+    // Only a new world (a tower placed or sold, or a restart with a new map), the debug toggle
+    // or the replay change the colors.
     if (world === tilesWorld && debug === tilesDebug && level === tilesLevel) return
     tilesWorld = world
     tilesDebug = debug
@@ -151,7 +156,7 @@ export function createScene(container: HTMLElement, initial: GameState): Scene {
     if (tiles.instanceColor) tiles.instanceColor.needsUpdate = true
   }
   // Colors must exist before the first frame: the shader is compiled with or without them.
-  syncTiles(initial.world, initial.debug, bfsReplayLevel(initial))
+  syncTiles(initial.map, initial.world, initial.debug, bfsReplayLevel(initial))
 
   // Flow field arrows: a flat arrow per cell, pointing at the next cell of a shortest path.
   const arrowShape = new THREE.Shape()
@@ -349,7 +354,7 @@ export function createScene(container: HTMLElement, initial: GameState): Scene {
     render(state, hover) {
       syncTowers(state.world.grid)
       const level = bfsReplayLevel(state)
-      syncTiles(state.world, state.debug, level)
+      syncTiles(state.map, state.world, state.debug, level)
       arrows.visible = state.debug
       if (state.debug) syncArrows(state.world, level)
       syncEnemies(state)

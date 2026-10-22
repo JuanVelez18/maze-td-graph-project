@@ -1,7 +1,8 @@
 import './style.css'
-import { mapConfig, rules } from './config'
+import { mapGenConfig, rules } from './config'
 import { routeCost } from './game/debug'
 import { createGame } from './game/map'
+import { generateMap } from './game/map-gen'
 import type { GameState, Msg } from './game/state'
 import { update } from './game/update'
 import type { ConnectedGrid } from './graph/connectivity'
@@ -19,12 +20,25 @@ if (!app) throw new Error('Missing #app element')
 /** Longest step the game clock takes, so a frame after a hidden tab does not teleport enemies. */
 const MAX_DT = 0.1
 
-let state: GameState = createGame(mapConfig, rules)
+/** A map seed from `?seed=N`, so a demo always gets the same map. */
+const urlSeed = Number.parseInt(new URLSearchParams(window.location.search).get('seed') ?? '', 10)
+
+/**
+ * The seed of the next map. Picking it is the only random choice in the game, and it happens
+ * here in the shell: the core turns the seed into a map deterministically.
+ */
+function pickSeed(): number {
+  return Number.isNaN(urlSeed) ? Math.floor(Math.random() * 2 ** 32) : urlSeed
+}
+
+let seed = pickSeed()
+let state: GameState = createGame(generateMap(mapGenConfig, seed), rules)
 let hover: CellIndex | undefined
 const queue: Msg[] = []
 
 const scene = createScene(app, state)
 const hud = createHud(app)
+hud.showSeed(seed)
 
 const canvas = app.querySelector('canvas')
 if (!canvas) throw new Error('Scene did not create a canvas')
@@ -53,12 +67,15 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('resize', () => scene.resize())
 
 /**
- * Starts a new game. Only the shell holds mutable state, so restarting is replacing it; the
- * scene follows because it syncs by reference to `state.world`.
+ * Starts a new game on a new map (the same one with `?seed=`). Only the shell holds mutable
+ * state, so restarting is replacing it; the scene follows because it syncs by reference to
+ * `state.world`.
  */
 function restart() {
   queue.length = 0
-  state = createGame(mapConfig, rules)
+  seed = pickSeed()
+  state = createGame(generateMap(mapGenConfig, seed), rules)
+  hud.showSeed(seed)
   showMetrics()
 }
 

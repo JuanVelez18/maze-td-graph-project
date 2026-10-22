@@ -8,7 +8,7 @@ Tower Defense en el navegador **sin camino fijo**: el jugador arma un laberinto 
 
 ## 1. La experiencia final
 
-1. Se abre el juego: una grilla vista en perspectiva casi cenital, con uno o varios spawns y una meta, cubos y colores planos de alto contraste.
+1. Se abre el juego: una grilla vista en perspectiva casi cenital, con uno o varios spawns y una meta, cubos y colores planos de alto contraste. Cada partida genera un mapa nuevo (spawns y lodo) a partir de una semilla, y una semilla fija reproduce el mismo mapa.
 2. El jugador coloca torres con el mouse. Cada torre es una pared, y los enemigos que ya están en camino **cambian de ruta en vivo**.
 3. Si el jugador intenta cerrar el último camino, el juego **rechaza la jugada** y dice por qué ("bloquearía el camino", "hay un enemigo en la celda", etc.).
 4. Llegan oleadas de enemigos. Los que alcanzan la meta restan vida a la base, y si la vida llega a cero se pierde la partida.

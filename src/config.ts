@@ -47,25 +47,40 @@ export type GameRules = {
   readonly enemyHpGrowth: number
 }
 
-export const mapConfig: MapConfig = {
-  width: 20,
-  height: 12,
-  spawns: [
-    { x: 0, y: 2 },
-    { x: 0, y: 9 },
-  ],
-  goal: { x: 19, y: 6 },
-  // A band of mud across the middle, open at the top and bottom: the cheapest routes go around
-  // it, while the BFS (which only counts steps) would walk straight through.
-  mud: band(12, 13, 2, 9),
-  mudCost: 4,
+/** An inclusive range of integers. */
+export type IntRange = { readonly min: number; readonly max: number }
+
+/** How to build a random map: the size and goal are fixed, the spawns and the mud come from a seed. */
+export type MapGenConfig = {
+  readonly width: number
+  readonly height: number
+  readonly goal: CellCoords
+  /** Spawns are placed on the left edge (x = 0), on distinct rows. */
+  readonly spawnCount: number
+  /** Least number of rows between two spawns, so they do not share a route from the start. */
+  readonly spawnGap: number
+  /** Number of rectangular mud patches. */
+  readonly mudPatches: IntRange
+  readonly mudPatchWidth: IntRange
+  readonly mudPatchHeight: IntRange
+  /** Columns kept free of mud next to the left and right edges, where the spawns and goal are. */
+  readonly mudMargin: number
+  readonly mudCost: number
 }
 
-/** Every cell of the rectangle [x0, x1] × [y0, y1]. */
-function band(x0: number, x1: number, y0: number, y1: number): CellCoords[] {
-  const cells: CellCoords[] = []
-  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) cells.push({ x, y })
-  return cells
+export const mapGenConfig: MapGenConfig = {
+  width: 20,
+  height: 12,
+  goal: { x: 19, y: 6 },
+  spawnCount: 2,
+  spawnGap: 3,
+  // A few patches in the middle: the cheapest routes go around them, while the BFS (which only
+  // counts steps) would walk straight through.
+  mudPatches: { min: 3, max: 4 },
+  mudPatchWidth: { min: 2, max: 3 },
+  mudPatchHeight: { min: 2, max: 4 },
+  mudMargin: 3,
+  mudCost: 4,
 }
 
 export const rules: GameRules = {
