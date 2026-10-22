@@ -1,3 +1,4 @@
+import { shoot } from './combat'
 import { advanceBfsReplay } from './debug'
 import { moveEnemies } from './enemies'
 import type { Event, GameState } from './state'
@@ -5,8 +6,9 @@ import { advanceWaves } from './waves'
 
 /**
  * Advances the game clock by `dt` seconds: enemies walk, each one that reaches the goal takes
- * 1 life from the base, and then the wave cycle moves on. Nothing moves while paused or lost,
- * except the BFS replay, so it can be shown on a frozen board.
+ * 1 life from the base, the towers shoot the ones still on the board, and then the wave cycle
+ * moves on. Nothing moves while paused or lost, except the BFS replay, so it can be shown on a
+ * frozen board.
  */
 export function tick(previous: GameState, dt: number): [GameState, readonly Event[]] {
   const state = advanceBfsReplay(previous, dt)
@@ -21,6 +23,7 @@ export function tick(previous: GameState, dt: number): [GameState, readonly Even
     return [{ ...state, enemies, life: 0, phase: { kind: 'lost' } }, events]
   }
 
-  const [next, waveEvents] = advanceWaves({ ...state, enemies, life }, dt)
-  return [next, [...events, ...waveEvents]]
+  const [shot, shotEvents] = shoot({ ...state, enemies, life }, dt)
+  const [next, waveEvents] = advanceWaves(shot, dt)
+  return [next, [...events, ...shotEvents, ...waveEvents]]
 }

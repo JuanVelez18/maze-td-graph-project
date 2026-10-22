@@ -91,6 +91,7 @@ type Msg =
 type Event =            // facts for the shell (UI, metrics); never commands
   | { kind: 'placement-rejected'; error: PlacementError }
   | { kind: 'enemy-reached-goal' }
+  | { kind: 'enemy-killed' }
   | { kind: 'wave-started'; wave: number }
   | { kind: 'game-over'; wave: number }
   | { kind: 'path-recomputed'; visited: number; ms: number }
@@ -125,7 +126,7 @@ function update(state: GameState, msg: Msg): [GameState, readonly Event[]]
 ## Decisiones de diseño tomadas
 
 - **Mapa configurable** en `config.ts`: tamaño, **uno o varios spawns** y una meta. Un solo BFS desde la meta sirve a todos los spawns.
-- **Colocar una torre se rechaza si:** la celda es spawn o meta, la ocupa un enemigo, o deja sin camino a la meta a algún spawn o a algún enemigo vivo. Cada caso es una variante de `PlacementError` y la UI muestra el motivo.
+- **Colocar una torre se rechaza si:** la celda es spawn o meta, la ocupa un enemigo, no alcanza el dinero (se chequea antes de la búsqueda, que es lo caro), o deja sin camino a la meta a algún spawn o a algún enemigo vivo. Cada caso es una variante de `PlacementError` y la UI muestra el motivo.
 - **Demo reproducible:** se puede grabar una secuencia de `Msg` y reproducirla como respaldo guionizado para la exposición (bloque 9).
 - Los enemigos se mueven hacia el **centro** de la siguiente celda e interpolan, para no atascarse en los bordes. Un enemigo es una arista en recorrido (`from`, `to`, `progress`) y ocupa ambas celdas; consulta el flow field solo al llegar a `to`, así que un recálculo lo desvía en el siguiente nodo. La conectividad se verifica desde el `to` de cada enemigo.
 - El `dt` de cada `tick` se limita en `main.ts` (`MAX_DT`) para que una pestaña oculta no teletransporte enemigos.
@@ -136,6 +137,7 @@ function update(state: GameState, msg: Msg): [GameState, readonly Event[]]
 - **Animación del BFS (B):** se reproduce desde `distance` (nivel *k* = celdas con `distance ≤ k`, frontera = `distance === k`), sin instrumentar `graph/`. Vive en el `GameState` (`bfsReplay`) y avanza con `tick` aunque el juego esté en pausa o perdido; activa el debug y apagarlo la cancela.
 - **Lodo y Dijkstra:** el lodo es fijo en `config.ts` (`mud`, `mudCost`); el jugador no lo coloca. El peso es el costo de **entrar** a la celda y también es tiempo: un enemigo cruza una arista en `cost(to) / enemySpeed` segundos, así que `distance` es el tiempo hasta la meta. `connect` usa siempre Dijkstra (sin lodo da lo mismo que BFS). `computeDijkstraField` devuelve el mismo `FlowField`, así que enemigos, debug y la animación (que con lodo avanza por costo) no cambian.
 - **Panel de métricas:** en cada `path-recomputed`, `main.ts` corre BFS y Dijkstra sobre la grilla nueva, mide cada uno repitiéndolo durante ~4 ms (una corrida queda bajo la resolución del reloj) y calcula el costo de las rutas de los spawns con `routeCost`. Muestra nodos, µs y costo de ruta; el costo de BFS se marca en rojo si es peor. Los nodos visitados coinciden porque ambos calculan el campo completo.
+- **Torres y dinero:** toda pared de la grilla es una torre. Cada `tick` va mover → vida → disparar → oleadas, así que un enemigo que llegó a la meta no cuenta como baja. Cada torre le dispara (rayo continuo de `towerDps · dt`, sin proyectiles ni cooldown) al enemigo de su rango euclidiano con menor `remainingCost` = `distance(to) + (1 − progress) · cost(to)`, o sea el más cercano a la meta según el flow field (empate → el más viejo); O(torres × enemigos). `towerTargets` es puro y lo usan el tick y el render (rayos). Dinero: `startMoney`, `towerCost`, `killReward`; vender devuelve el 100%, así que el dinero acota las torres simultáneas y reacomodar el laberinto no castiga. La vida de los enemigos crece por oleada (`enemyHp`) y el render los tiñe de blanco a rojo.
 - **Gameplay** en escalera, cada peldaño jugable: sandbox → vida de base + oleadas → torres con disparo instantáneo (sin proyectiles) → límite de torres o dinero.
 - **i18n:** módulo propio pequeño y tipado (`t('key')`), español por defecto, con selector es/en. Migrar a LinguiJS queda como mejora para después de la exposición.
 - **Deploy:** el proyecto se construye pensando en GitHub Pages (`base` configurable en Vite), pero es lo último. Si no hay tiempo, se presenta en local.

@@ -8,6 +8,11 @@ export function waveSize(rules: GameRules, wave: number): number {
   return rules.firstWaveSize + (wave - 1) * rules.waveGrowth
 }
 
+/** Life of each enemy in wave number `wave` (1-based): `enemyHpGrowth` more than the last. */
+export function enemyHp(rules: GameRules, wave: number): number {
+  return rules.enemyHp + (wave - 1) * rules.enemyHpGrowth
+}
+
 /**
  * Moves the wave cycle forward by `dt` seconds: a break counts down until the next wave starts,
  * and a wave spawns its enemies one interval apart. A wave ends, and a break begins, once all
@@ -38,11 +43,12 @@ function spawnDue(state: GameState, remaining: number, dt: number): GameState {
   const { map, rules, world } = state
   const enemies: Enemy[] = [...state.enemies]
   let { spawnTimer, nextSpawn, nextEnemyId } = state
+  const hp = enemyHp(rules, state.wave)
   if (remaining > 0) spawnTimer -= dt
   while (remaining > 0 && spawnTimer <= 0) {
     const spawn = map.spawns[nextSpawn]
     if (spawn === undefined) break
-    enemies.push(spawnEnemy(world, spawn, nextEnemyId as EnemyId))
+    enemies.push(spawnEnemy(world, spawn, nextEnemyId as EnemyId, hp))
     nextEnemyId++
     nextSpawn = (nextSpawn + 1) % map.spawns.length
     spawnTimer += rules.spawnInterval

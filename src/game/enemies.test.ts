@@ -34,7 +34,7 @@ describe('tick: spawning', () => {
 
     expect(events).toEqual([{ kind: 'wave-started', wave: 1 }])
     expect(next.enemies).toEqual([
-      { id: 0, from: at(0, 0), to: step(state, at(0, 0)), progress: 0 },
+      { id: 0, from: at(0, 0), to: step(state, at(0, 0)), progress: 0, hp: 1 },
     ])
   })
 
@@ -170,7 +170,13 @@ describe('place-tower with live enemies', () => {
       `,
       { enemySpeed: 1, spawnInterval: 1000 },
     )
-    const trapped: Enemy = { id: 0 as EnemyId, from: at(1, 2), to: at(2, 2), progress: 0.5 }
+    const trapped: Enemy = {
+      id: 0 as EnemyId,
+      from: at(1, 2),
+      to: at(2, 2),
+      progress: 0.5,
+      hp: 1,
+    }
     const withEnemy = { ...state, enemies: [trapped] }
 
     const [next, events] = update(withEnemy, { kind: 'place-tower', cell: at(2, 1) })

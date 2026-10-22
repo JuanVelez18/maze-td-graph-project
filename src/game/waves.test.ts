@@ -6,7 +6,7 @@ import { createGameFromGrid } from './map'
 import type { Event, GameState } from './state'
 import { testRules } from './test-rules'
 import { update } from './update'
-import { waveSize } from './waves'
+import { enemyHp, waveSize } from './waves'
 
 // Enemies walk the top row (2 edges from S to G); the bottom row is free for towers.
 const MAP = `
@@ -53,6 +53,17 @@ describe('waves', () => {
   it('makes each wave `waveGrowth` enemies bigger than the last', () => {
     const rules = testRules({ firstWaveSize: 2, waveGrowth: 3 })
     expect([1, 2, 3].map((wave) => waveSize(rules, wave))).toEqual([2, 5, 8])
+  })
+
+  it('makes the enemies of each wave `enemyHpGrowth` tougher than the last', () => {
+    const rules = testRules({ enemyHp: 4, enemyHpGrowth: 2 })
+    expect([1, 2, 3].map((wave) => enemyHp(rules, wave))).toEqual([4, 6, 8])
+  })
+
+  it('spawns the enemies of a wave with that wave’s life', () => {
+    const { state } = setup({ enemyHp: 4, enemyHpGrowth: 2, enemySpeed: 0 })
+    const [first] = tick(state, 0)
+    expect(first.enemies).toMatchObject([{ hp: 4 }])
   })
 
   it('spawns exactly `waveSize` enemies, even with a long wait', () => {

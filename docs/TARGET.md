@@ -12,7 +12,7 @@ Tower Defense en el navegador **sin camino fijo**: el jugador arma un laberinto 
 2. El jugador coloca torres con el mouse. Cada torre es una pared, y los enemigos que ya están en camino **cambian de ruta en vivo**.
 3. Si el jugador intenta cerrar el último camino, el juego **rechaza la jugada** y dice por qué ("bloquearía el camino", "hay un enemigo en la celda", etc.).
 4. Llegan oleadas de enemigos. Los que alcanzan la meta restan vida a la base, y si la vida llega a cero se pierde la partida.
-5. Las torres disparan al enemigo más cercano dentro de su rango, y hay un límite de torres o de dinero, así que armar el laberinto es un puzzle.
+5. Las torres disparan (un rayo instantáneo) al enemigo de su rango **más cercano a la meta**, según las distancias del mismo flow field que guía a los enemigos. Cada torre cuesta dinero, matar enemigos da dinero y vender devuelve todo, así que el dinero limita cuántas torres hay a la vez y armar el laberinto es un puzzle.
 6. Con una tecla se activa el **modo debug**, que muestra el grafo detrás del juego:
    - **Heatmap:** cada celda coloreada según su distancia a la meta.
    - **Flechas del flow field:** hacia dónde da el siguiente paso un enemigo en cada celda.

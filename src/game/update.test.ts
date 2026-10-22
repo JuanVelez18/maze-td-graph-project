@@ -75,6 +75,32 @@ describe('update: sell-tower', () => {
   })
 })
 
+describe('update: money', () => {
+  it('charges the tower cost and gives all of it back on sale', () => {
+    const { state, at } = setup()
+    const [built] = update(state, { kind: 'place-tower', cell: at(4, 0) })
+    expect(built.money).toBe(state.money - RULES.towerCost)
+
+    const [sold] = update(built, { kind: 'sell-tower', cell: at(4, 0) })
+    expect(sold.money).toBe(state.money)
+  })
+
+  it('rejects a tower the player cannot pay for', () => {
+    const { state, at } = setup()
+    const poor = { ...state, money: RULES.towerCost - 1 }
+    const [next, events] = update(poor, { kind: 'place-tower', cell: at(4, 0) })
+
+    expect(next).toBe(poor)
+    expect(events).toEqual([{ kind: 'placement-rejected', error: { kind: 'no-money' } }])
+  })
+
+  it('still names the cell problem first when money is short', () => {
+    const { state, at } = setup()
+    const [, events] = update({ ...state, money: 0 }, { kind: 'place-tower', cell: at(0, 0) })
+    expect(events).toEqual([{ kind: 'placement-rejected', error: { kind: 'is-spawn' } }])
+  })
+})
+
 describe('update: other messages', () => {
   it('toggles debug mode', () => {
     const { state } = setup()

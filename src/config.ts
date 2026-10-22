@@ -31,6 +31,20 @@ export type GameRules = {
   readonly waveGrowth: number
   /** Speed of the BFS replay (debug mode), in levels per second. */
   readonly bfsLevelsPerSecond: number
+  /** Money at the start of a game. */
+  readonly startMoney: number
+  /** Price of a tower; selling it gives the whole price back. */
+  readonly towerCost: number
+  /** Money for each enemy a tower kills. */
+  readonly killReward: number
+  /** How far a tower shoots, in cells, measured between centers. */
+  readonly towerRange: number
+  /** Damage per second a tower deals to its target. */
+  readonly towerDps: number
+  /** Life of an enemy in the first wave. */
+  readonly enemyHp: number
+  /** Extra life of the enemies in each wave after the first. */
+  readonly enemyHpGrowth: number
 }
 
 export const mapConfig: MapConfig = {
@@ -63,4 +77,11 @@ export const rules: GameRules = {
   firstWaveSize: 5,
   waveGrowth: 3,
   bfsLevelsPerSecond: 4,
+  startMoney: 50,
+  towerCost: 10,
+  killReward: 3,
+  towerRange: 2.5,
+  towerDps: 2,
+  enemyHp: 4,
+  enemyHpGrowth: 2,
 }

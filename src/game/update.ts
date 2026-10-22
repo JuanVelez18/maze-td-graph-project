@@ -13,13 +13,14 @@ export function update(state: GameState, msg: Msg): [GameState, readonly Event[]
       if (lost) return [state, []]
       const placed = tryPlaceTower(state, msg.cell)
       if (!placed.ok) return [state, [{ kind: 'placement-rejected', error: placed.error }]]
-      return withWorld(state, placed.value)
+      return withWorld({ ...state, money: state.money - state.rules.towerCost }, placed.value)
     }
     case 'sell-tower': {
       if (lost) return [state, []]
       const sold = sellTower(state, msg.cell)
       if (sold === undefined) return [state, []]
-      return withWorld(state, sold)
+      // Full refund: the money caps the towers on the board, so reshaping the maze is free.
+      return withWorld({ ...state, money: state.money + state.rules.towerCost }, sold)
     }
     case 'tick':
       return tick(state, msg.dt)

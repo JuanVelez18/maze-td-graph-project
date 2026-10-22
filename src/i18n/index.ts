@@ -2,6 +2,7 @@ const es = {
   'help.controls':
     'Clic izq.: torre · Clic der.: vender · D: debug · B: animar búsqueda · P: pausa · R: reiniciar',
   'status.life': '♥ {life}',
+  'status.money': '$ {money} · torre $ {cost}',
   'status.wave': 'Oleada {wave}',
   'status.next': 'Siguiente oleada en {seconds} s',
   'wave.started': 'Oleada {wave}',
@@ -12,6 +13,7 @@ const es = {
   'error.is-goal': 'No se puede construir sobre la meta',
   'error.occupied': 'Ya hay una torre en esa celda',
   'error.enemy-on-cell': 'Hay un enemigo en esa celda',
+  'error.no-money': 'No alcanza el dinero para otra torre',
   'error.blocks-path': 'Bloquearía el camino a la meta',
   'metrics.nodes': 'nodos',
   'metrics.time': 'tiempo',
@@ -30,6 +32,7 @@ const en: Record<Key, string> = {
   'help.controls':
     'Left click: tower · Right click: sell · D: debug · B: play search · P: pause · R: restart',
   'status.life': '♥ {life}',
+  'status.money': '$ {money} · tower $ {cost}',
   'status.wave': 'Wave {wave}',
   'status.next': 'Next wave in {seconds} s',
   'wave.started': 'Wave {wave}',
@@ -40,6 +43,7 @@ const en: Record<Key, string> = {
   'error.is-goal': 'Cannot build on the goal',
   'error.occupied': 'There is already a tower there',
   'error.enemy-on-cell': 'An enemy is on that cell',
+  'error.no-money': 'Not enough money for another tower',
   'error.blocks-path': 'It would block the path to the goal',
   'metrics.nodes': 'nodes',
   'metrics.time': 'time',

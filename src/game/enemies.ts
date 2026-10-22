@@ -1,6 +1,6 @@
 import type { ConnectedGrid } from '../graph/connectivity'
 import { nextStep } from '../graph/flow-field'
-import { type CellIndex, cost } from '../graph/grid'
+import { type CellIndex, cellCoords, cost, type Grid } from '../graph/grid'
 import type { Enemy, EnemyId } from './state'
 
 /**
@@ -28,11 +28,21 @@ export function occupiedCells(enemy: Enemy): readonly CellIndex[] {
   return [enemy.from, enemy.to]
 }
 
-/** A new enemy on `spawn`, already heading to the first cell of its shortest path. */
-export function spawnEnemy(world: ConnectedGrid, spawn: CellIndex, id: EnemyId): Enemy {
+/** Where `enemy` is, in cell coordinates: on the straight line between the two cell centers. */
+export function enemyPosition(
+  grid: Grid,
+  enemy: Enemy,
+): { readonly x: number; readonly y: number } {
+  const a = cellCoords(grid, enemy.from)
+  const b = cellCoords(grid, enemy.to)
+  return { x: a.x + (b.x - a.x) * enemy.progress, y: a.y + (b.y - a.y) * enemy.progress }
+}
+
+/** A new enemy on `spawn` with `hp` life, already heading to the first cell of its shortest path. */
+export function spawnEnemy(world: ConnectedGrid, spawn: CellIndex, id: EnemyId, hp: number): Enemy {
   const next = nextStep(world.field, spawn)
   if (next === undefined) throw new Error('A spawn has no path to the goal')
-  return { id, from: spawn, to: next, progress: 0 }
+  return { id, from: spawn, to: next, progress: 0, hp }
 }
 
 /**
@@ -47,7 +57,7 @@ function walk(world: ConnectedGrid, enemy: Enemy, travel: number): Enemy | undef
     const edgeCost = cost(world.grid, to)
     // What is left of the current edge, in units of cost.
     const remaining = (1 - progress) * edgeCost
-    if (left < remaining) return { id: enemy.id, from, to, progress: progress + left / edgeCost }
+    if (left < remaining) return { ...enemy, from, to, progress: progress + left / edgeCost }
     left -= remaining
     if (to === world.goal) return undefined
     // `to` is a checked source of the connected grid, so it always has a next step.

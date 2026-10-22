@@ -65,6 +65,15 @@ canvas {
   animation: hit 0.4s;
 }
 
+.hud-status-money {
+  display: inline-block;
+  color: #ffd84d;
+}
+
+.hud-status-money.gain {
+  animation: hit 0.4s;
+}
+
 @keyframes hit {
   from {
     color: #fff;

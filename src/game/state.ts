@@ -22,6 +22,8 @@ export type Enemy = {
   readonly to: CellIndex
   /** Fraction of the edge already walked, in [0, 1). */
   readonly progress: number
+  /** Life left; the enemy dies when towers bring it to 0. */
+  readonly hp: number
 }
 
 /** Where the game is in its cycle of waves. */
@@ -45,6 +47,8 @@ export type GameState = {
   readonly nextSpawn: number
   readonly nextEnemyId: number
   readonly life: number
+  /** Spent on towers, earned back by selling them or killing enemies. */
+  readonly money: number
   /** Number of the current (or last) wave; 0 before the first one. */
   readonly wave: number
   readonly phase: Phase
@@ -71,6 +75,8 @@ export type PlacementError =
   | { readonly kind: 'is-goal' }
   | { readonly kind: 'occupied' }
   | { readonly kind: 'enemy-on-cell' }
+  /** The player cannot pay for the tower. */
+  | { readonly kind: 'no-money' }
   /** The tower would leave these sources (spawns or enemies) without a path to the goal. */
   | { readonly kind: 'blocks-path'; readonly cells: readonly CellIndex[] }
 
@@ -78,6 +84,7 @@ export type PlacementError =
 export type Event =
   | { readonly kind: 'placement-rejected'; readonly error: PlacementError }
   | { readonly kind: 'enemy-reached-goal' }
+  | { readonly kind: 'enemy-killed' }
   | { readonly kind: 'wave-started'; readonly wave: number }
   | { readonly kind: 'game-over'; readonly wave: number }
   /** `visited` comes from the BFS; the shell measures and adds the time. */

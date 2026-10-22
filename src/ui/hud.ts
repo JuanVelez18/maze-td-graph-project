@@ -56,11 +56,12 @@ export function createHud(container: HTMLElement): Hud {
   }
   metrics.hidden = true
 
-  // Base life and wave, under the controls.
+  // Base life, money and wave, under the controls.
   const status = element('div', 'hud-status')
   const life = element('span', 'hud-status-life')
+  const money = element('span', 'hud-status-money')
   const wave = element('span', '')
-  status.append(life, wave)
+  status.append(life, money, wave)
 
   // Big centered message while paused or after losing.
   const overlay = element('div', 'hud-overlay')
@@ -116,9 +117,10 @@ export function createHud(container: HTMLElement): Hud {
           break
         case 'enemy-reached-goal':
           // Flash the life counter; the new value itself comes from `render`.
-          life.classList.remove('hit')
-          void life.offsetWidth // restart the CSS animation
-          life.classList.add('hit')
+          flash(life, 'hit')
+          break
+        case 'enemy-killed':
+          flash(money, 'gain')
           break
         case 'wave-started':
           showToast(t('wave.started', { wave: event.wave }), 'info')
@@ -141,6 +143,7 @@ export function createHud(container: HTMLElement): Hud {
     },
     render(state) {
       setText(life, t('status.life', { life: state.life }))
+      setText(money, t('status.money', { money: state.money, cost: state.rules.towerCost }))
       setText(
         wave,
         state.phase.kind === 'break'
@@ -185,11 +188,20 @@ function errorKey(error: PlacementError): Key {
       return 'error.occupied'
     case 'enemy-on-cell':
       return 'error.enemy-on-cell'
+    case 'no-money':
+      return 'error.no-money'
     case 'blocks-path':
       return 'error.blocks-path'
     default:
       return assertNever(error)
   }
+}
+
+/** Replays the CSS animation of `className` on `el`, even if it is still running. */
+function flash(el: HTMLElement, className: string): void {
+  el.classList.remove(className)
+  void el.offsetWidth // force a reflow so the animation restarts
+  el.classList.add(className)
 }
 
 function element(tag: 'div' | 'span', className: string): HTMLElement {

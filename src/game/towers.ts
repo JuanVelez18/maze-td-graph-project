@@ -6,7 +6,8 @@ import type { GameState, PlacementError } from './state'
 
 /**
  * A tower is a wall: it removes `cell` and its edges from the graph. The new grid is only
- * accepted if one BFS from the goal still reaches every spawn and every live enemy.
+ * accepted if the player can pay for it and one search from the goal still reaches every
+ * spawn and every live enemy.
  */
 export function tryPlaceTower(
   state: GameState,
@@ -18,6 +19,8 @@ export function tryPlaceTower(
   if (isWall(state.world.grid, cell)) return err({ kind: 'occupied' })
   if (state.enemies.some((enemy) => occupiedCells(enemy).includes(cell)))
     return err({ kind: 'enemy-on-cell' })
+  // Before the search, which is the expensive check.
+  if (state.money < state.rules.towerCost) return err({ kind: 'no-money' })
 
   // An enemy only needs a path from the cell it walks to; it never turns back.
   const sources = [...new Set([...spawns, ...state.enemies.map((enemy) => enemy.to)])]
