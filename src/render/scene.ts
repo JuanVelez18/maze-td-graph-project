@@ -3,7 +3,7 @@ import { bfsReplayLevel, maxDistance } from '../game/debug'
 import type { Enemy, GameState } from '../game/state'
 import type { ConnectedGrid } from '../graph/connectivity'
 import { distanceTo, nextStep } from '../graph/flow-field'
-import { type CellIndex, cellAt, cellCoords, type Grid, isWall } from '../graph/grid'
+import { type CellIndex, cellAt, cellCoords, cost, type Grid, isWall } from '../graph/grid'
 
 export type Scene = {
   /** Brings the Three.js objects in line with `state`. Never changes the state. */
@@ -16,6 +16,7 @@ export type Scene = {
 const COLORS = {
   background: 0x0f1115,
   floor: 0x2a2f3a,
+  mud: 0x7a4a24,
   spawn: 0x2ecc71,
   goal: 0xff4d4d,
   tower: 0x4da3ff,
@@ -34,6 +35,8 @@ const COLORS = {
 const HEAT_NEAR = new THREE.Color(0xffe14d)
 const HEAT_MID = new THREE.Color(0xff7a3d)
 const HEAT_FAR = new THREE.Color(0x9b5cff)
+/** In debug mode mud keeps a brown tint over its heat color, so it can still be told apart. */
+const MUD_TINT = 0.45
 /** Arrows lie just above the tiles (whose top is y = 0) so the two do not z-fight. */
 const ARROW_LIFT = 0.01
 const TILE_GAP = 0.08
@@ -88,6 +91,7 @@ export function createScene(container: HTMLElement, initial: GameState): Scene {
   )
   const matrix = new THREE.Matrix4()
   const color = new THREE.Color()
+  const mudColor = new THREE.Color(COLORS.mud)
   allCells.forEach((cell, i) => {
     const center = cellCenter(initial.world.grid, cell)
     tiles.setMatrixAt(i, matrix.makeTranslation(center.x, -TILE_HEIGHT / 2, center.z))
@@ -117,14 +121,17 @@ export function createScene(container: HTMLElement, initial: GameState): Scene {
     const max = Math.max(maxDistance(world), 1)
     allCells.forEach((cell, i) => {
       const distance = distanceTo(world.field, cell)
+      const mud = cost(world.grid, cell) > 1
       if (cell === goal) color.setHex(COLORS.goal)
       else if (spawns.includes(cell)) color.setHex(COLORS.spawn)
-      else if (!debug) color.setHex(COLORS.floor)
+      else if (!debug) color.setHex(mud ? COLORS.mud : COLORS.floor)
       else if (distance === undefined) color.setHex(COLORS.unreachable)
       else if (distance === level) color.setHex(COLORS.frontier)
       // Same normalization as the full heatmap, so the replay ends on exactly that picture.
-      else if (revealed(distance, level)) heatInto(distance / max, color)
-      else color.setHex(COLORS.floor)
+      else if (revealed(distance, level)) {
+        heatInto(distance / max, color)
+        if (mud) color.lerp(mudColor, MUD_TINT)
+      } else color.setHex(mud ? COLORS.mud : COLORS.floor)
       tiles.setColorAt(i, color)
     })
     if (tiles.instanceColor) tiles.instanceColor.needsUpdate = true

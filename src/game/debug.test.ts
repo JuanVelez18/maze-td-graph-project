@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { parseMap } from '../graph/test-map'
-import { bfsReplayLevel, frontierSize, maxDistance } from './debug'
+import { computeFlowField } from '../graph/flow-field'
+import { parseMap, TEST_MUD_COST } from '../graph/test-map'
+import { bfsReplayLevel, frontierSize, maxDistance, routeCost } from './debug'
 import { createGameFromGrid } from './map'
 import type { GameState } from './state'
 import { testRules } from './test-rules'
@@ -45,6 +46,38 @@ describe('maxDistance', () => {
     expect(maxDistance(state.world)).toBe(6)
     // (0,2) now goes up to (0,0) and around the towers: 4 steps to (2,0), then 4 more.
     expect(maxDistance(after.world)).toBe(8)
+  })
+})
+
+describe('routeCost', () => {
+  it('adds the cost of every cell entered on the way to the goal', () => {
+    // The game routes around the mud: 4 cells of cost 1.
+    const { state, at } = setup(`
+      S~G
+      ...
+    `)
+    const { grid, field } = state.world
+    expect(routeCost(grid, field, at(0, 0))).toBe(4)
+    expect(routeCost(grid, field, at(2, 0))).toBe(0)
+  })
+
+  it('prices the route a BFS would take, through the mud', () => {
+    const { state, at } = setup(`
+      S~G
+      ...
+    `)
+    const { grid, goal } = state.world
+    expect(routeCost(grid, computeFlowField(grid, goal), at(0, 0))).toBe(TEST_MUD_COST + 1)
+  })
+
+  it('is undefined for a cell with no path', () => {
+    const { state, at } = setup(`
+      S...G
+      ###..
+      .#...
+    `)
+    const { grid, field } = state.world
+    expect(routeCost(grid, field, at(0, 2))).toBeUndefined()
   })
 })
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { isWall } from '../graph/grid'
+import { distanceTo } from '../graph/flow-field'
+import { type CellIndex, cellAt, cost, isWall } from '../graph/grid'
 import { parseMap } from '../graph/test-map'
 import { createGame, createGameFromGrid } from './map'
 import { testRules } from './test-rules'
@@ -94,17 +95,48 @@ describe('createGame', () => {
   })
 
   it('throws when a configured cell is outside the map', () => {
-    const config = { width: 3, height: 3, spawns: [{ x: 3, y: 0 }], goal: { x: 0, y: 0 } }
+    const config = {
+      width: 3,
+      height: 3,
+      spawns: [{ x: 3, y: 0 }],
+      goal: { x: 0, y: 0 },
+      mud: [],
+      mudCost: 4,
+    }
     expect(() => createGame(config, RULES)).toThrow()
   })
 
   it('builds an open grid without enemies from the configuration', () => {
     const state = createGame(
-      { width: 3, height: 2, spawns: [{ x: 0, y: 0 }], goal: { x: 2, y: 1 } },
+      { width: 3, height: 2, spawns: [{ x: 0, y: 0 }], goal: { x: 2, y: 1 }, mud: [], mudCost: 4 },
       RULES,
     )
     expect(state.world.field.visited).toBe(6)
     expect(state.enemies).toEqual([])
     expect(state.debug).toBe(false)
+  })
+
+  it('puts mud on the configured cells', () => {
+    const state = createGame(
+      {
+        width: 3,
+        height: 2,
+        spawns: [{ x: 0, y: 0 }],
+        goal: { x: 2, y: 0 },
+        mud: [{ x: 1, y: 0 }],
+        mudCost: 4,
+      },
+      RULES,
+    )
+    const { grid, field } = state.world
+    const at = (x: number, y: number): CellIndex => {
+      const cell = cellAt(grid, x, y)
+      if (cell === undefined) throw new Error('unreachable')
+      return cell
+    }
+    expect(cost(grid, at(1, 0))).toBe(4)
+    expect(cost(grid, at(0, 1))).toBe(1)
+    // Around the mud (4 cells of cost 1) beats through it (4 + 1).
+    expect(distanceTo(field, at(0, 0))).toBe(4)
   })
 })

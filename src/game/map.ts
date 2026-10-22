@@ -1,6 +1,6 @@
 import type { CellCoords, GameRules, MapConfig } from '../config'
 import { connect } from '../graph/connectivity'
-import { type CellIndex, cellAt, createGrid, type Grid } from '../graph/grid'
+import { type CellIndex, cellAt, createGrid, type Grid, setCost } from '../graph/grid'
 import type { GameMap, GameState } from './state'
 
 /**
@@ -31,13 +31,14 @@ export function createGameFromGrid(grid: Grid, map: GameMap, rules: GameRules): 
 }
 
 export function createGame(config: MapConfig, rules: GameRules): GameState {
-  const grid = createGrid(config.width, config.height)
+  let grid = createGrid(config.width, config.height)
   const toCell = ({ x, y }: CellCoords): CellIndex => {
     const cell = cellAt(grid, x, y)
     if (cell === undefined)
       throw new Error(`(${x}, ${y}) is outside the ${config.width}x${config.height} map`)
     return cell
   }
+  for (const coords of config.mud) grid = setCost(grid, toCell(coords), config.mudCost)
 
   return createGameFromGrid(
     grid,

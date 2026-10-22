@@ -1,6 +1,7 @@
 import type { Brand } from '../shared/brand'
 import { err, ok, type Result } from '../shared/result'
-import { computeFlowField, distanceTo, type FlowField } from './flow-field'
+import { computeDijkstraField } from './dijkstra'
+import { distanceTo, type FlowField } from './flow-field'
 import type { CellIndex, Grid } from './grid'
 
 /**
@@ -19,15 +20,16 @@ export type Disconnected = {
 }
 
 /**
- * Runs one BFS from `goal` and checks that every source (spawns, live enemies) has a
- * distance. Connectivity falls out of the same flow field the enemies will use.
+ * Runs one Dijkstra from `goal` and checks that every source (spawns, live enemies) has a
+ * distance. Connectivity falls out of the same flow field the enemies will use. Dijkstra and
+ * not BFS because the grid may have mud; without it both give the same distances.
  */
 export function connect(
   grid: Grid,
   goal: CellIndex,
   sources: readonly CellIndex[],
 ): Result<ConnectedGrid, Disconnected> {
-  const field = computeFlowField(grid, goal)
+  const field = computeDijkstraField(grid, goal)
   const invalidSources = sources.filter((source) => distanceTo(field, source) === undefined)
   if (invalidSources.length > 0) return err({ kind: 'disconnected', cells: invalidSources })
 

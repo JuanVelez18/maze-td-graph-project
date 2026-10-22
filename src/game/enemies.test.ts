@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { GameRules } from '../config'
 import { distanceTo, nextStep } from '../graph/flow-field'
 import type { CellIndex } from '../graph/grid'
-import { parseMap } from '../graph/test-map'
+import { parseMap, TEST_MUD_COST } from '../graph/test-map'
 import { createGameFromGrid } from './map'
 import type { Enemy, EnemyId, GameState } from './state'
 import { testRules } from './test-rules'
@@ -88,6 +88,57 @@ describe('tick: movement', () => {
     expect(after.from).toBe(enemy.to)
     expect(after.to).not.toBe(blocked)
     expect(after.to).toBe(step(walled, enemy.to))
+  })
+})
+
+describe('tick: mud', () => {
+  it('routes enemies around mud when the detour is cheaper', () => {
+    const { state, at } = setup(
+      `
+        S~G
+        ...
+      `,
+      { enemySpeed: 1, spawnInterval: 1000 },
+    )
+    const [spawned] = tick(state, 0)
+    expect(spawned.enemies).toMatchObject([{ from: at(0, 0), to: at(0, 1) }])
+  })
+
+  it('crosses a mud cell `cost` times slower than a normal one', () => {
+    // A corridor with no way around: the enemy has to enter the mud at (1,0).
+    const { state, at } = setup(
+      `
+        S~.G
+      `,
+      { enemySpeed: 1, spawnInterval: 1000 },
+    )
+    const [spawned] = tick(state, 0)
+    expect(spawned.enemies).toMatchObject([{ to: at(1, 0), progress: 0 }])
+
+    // Entering the mud costs TEST_MUD_COST (5): after 2.5 s it is halfway through that edge.
+    const [halfway] = tick(spawned, TEST_MUD_COST / 2)
+    expect(halfway.enemies).toMatchObject([{ to: at(1, 0), progress: 0.5 }])
+
+    // Leaving the mud is a normal edge again: 2.5 s to finish the mud edge, then 0.5 s more.
+    const [out] = tick(halfway, TEST_MUD_COST / 2 + 0.5)
+    expect(out.enemies).toMatchObject([{ from: at(1, 0), to: at(2, 0), progress: 0.5 }])
+  })
+
+  it('reaches the goal after exactly `distance` seconds at speed 1, mud included', () => {
+    const { state, at } = setup(
+      `
+        S~.G
+      `,
+      { enemySpeed: 1, spawnInterval: 1000 },
+    )
+    const distance = distanceTo(state.world.field, at(0, 0)) ?? Number.NaN
+    expect(distance).toBe(TEST_MUD_COST + 2)
+
+    const [spawned] = tick(state, 0)
+    const [almost] = tick(spawned, distance - 0.25)
+    expect(almost.enemies).toHaveLength(1)
+    const [, events] = tick(almost, 0.25)
+    expect(events).toEqual([{ kind: 'enemy-reached-goal' }])
   })
 })
 

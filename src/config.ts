@@ -6,10 +6,16 @@ export type MapConfig = {
   readonly height: number
   readonly spawns: readonly CellCoords[]
   readonly goal: CellCoords
+  /** Cells that cost `mudCost` to enter instead of 1. */
+  readonly mud: readonly CellCoords[]
+  readonly mudCost: number
 }
 
 export type GameRules = {
-  /** Enemy speed in cells (edges) per second. */
+  /**
+   * Enemy speed in cells per second on normal ground. Entering a cell takes as long as its
+   * cost, so the weights of the graph are travel times and mud slows enemies down.
+   */
   readonly enemySpeed: number
   /** Seconds between two enemies of a wave; the spawns take turns. */
   readonly spawnInterval: number
@@ -35,6 +41,17 @@ export const mapConfig: MapConfig = {
     { x: 0, y: 9 },
   ],
   goal: { x: 19, y: 6 },
+  // A band of mud across the middle, open at the top and bottom: the cheapest routes go around
+  // it, while the BFS (which only counts steps) would walk straight through.
+  mud: band(12, 13, 2, 9),
+  mudCost: 4,
+}
+
+/** Every cell of the rectangle [x0, x1] × [y0, y1]. */
+function band(x0: number, x1: number, y0: number, y1: number): CellCoords[] {
+  const cells: CellCoords[] = []
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) cells.push({ x, y })
+  return cells
 }
 
 export const rules: GameRules = {

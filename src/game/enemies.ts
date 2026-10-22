@@ -1,21 +1,22 @@
 import type { ConnectedGrid } from '../graph/connectivity'
 import { nextStep } from '../graph/flow-field'
-import type { CellIndex } from '../graph/grid'
+import { type CellIndex, cost } from '../graph/grid'
 import type { Enemy, EnemyId } from './state'
 
 /**
- * Moves every enemy `distance` cells along the flow field. Enemies that reach the goal leave
- * the board and are counted in `arrived`.
+ * Moves every enemy along the flow field, spending `travel` units of cost: entering a normal
+ * cell takes 1 and entering mud takes its cost. Enemies that reach the goal leave the board
+ * and are counted in `arrived`.
  */
 export function moveEnemies(
   world: ConnectedGrid,
   enemies: readonly Enemy[],
-  distance: number,
+  travel: number,
 ): { readonly enemies: readonly Enemy[]; readonly arrived: number } {
   const moved: Enemy[] = []
   let arrived = 0
   for (const enemy of enemies) {
-    const next = walk(world, enemy, distance)
+    const next = walk(world, enemy, travel)
     if (next === undefined) arrived++
     else moved.push(next)
   }
@@ -35,20 +36,25 @@ export function spawnEnemy(world: ConnectedGrid, spawn: CellIndex, id: EnemyId):
 }
 
 /**
- * Moves `enemy` `distance` cells along the flow field, possibly across several edges. Returns
- * `undefined` once it reaches the goal.
+ * Moves `enemy` along the flow field spending `travel` units of cost, possibly across several
+ * edges. An edge costs what its `to` cell costs to enter. Returns `undefined` once it reaches
+ * the goal.
  */
-function walk(world: ConnectedGrid, enemy: Enemy, distance: number): Enemy | undefined {
-  let { from, to } = enemy
-  let progress = enemy.progress + distance
-  while (progress >= 1) {
+function walk(world: ConnectedGrid, enemy: Enemy, travel: number): Enemy | undefined {
+  let { from, to, progress } = enemy
+  let left = travel
+  while (true) {
+    const edgeCost = cost(world.grid, to)
+    // What is left of the current edge, in units of cost.
+    const remaining = (1 - progress) * edgeCost
+    if (left < remaining) return { id: enemy.id, from, to, progress: progress + left / edgeCost }
+    left -= remaining
     if (to === world.goal) return undefined
     // `to` is a checked source of the connected grid, so it always has a next step.
     const next = nextStep(world.field, to)
     if (next === undefined) throw new Error('An enemy lost its path to the goal')
     from = to
     to = next
-    progress -= 1
+    progress = 0
   }
-  return { id: enemy.id, from, to, progress }
 }

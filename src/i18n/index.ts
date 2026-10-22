@@ -1,6 +1,6 @@
 const es = {
   'help.controls':
-    'Clic izq.: torre · Clic der.: vender · D: debug · B: animar BFS · P: pausa · R: reiniciar',
+    'Clic izq.: torre · Clic der.: vender · D: debug · B: animar búsqueda · P: pausa · R: reiniciar',
   'status.life': '♥ {life}',
   'status.wave': 'Oleada {wave}',
   'status.next': 'Siguiente oleada en {seconds} s',
@@ -13,11 +13,14 @@ const es = {
   'error.occupied': 'Ya hay una torre en esa celda',
   'error.enemy-on-cell': 'Hay un enemigo en esa celda',
   'error.blocks-path': 'Bloquearía el camino a la meta',
-  'metrics.bfs': 'BFS: {visited} nodos · {ms} ms',
-  'debug.title': 'Modo debug · BFS desde la meta',
-  'debug.steps': '{max} pasos',
-  'debug.arrows': 'Flecha = siguiente paso',
-  'debug.replay': 'Nivel {level} de {max} · nodos en la frontera: {frontier}',
+  'metrics.nodes': 'nodos',
+  'metrics.time': 'tiempo',
+  'metrics.route': 'costo ruta',
+  'metrics.micros': '{us} µs',
+  'debug.title': 'Modo debug · Dijkstra desde la meta',
+  'debug.cost': 'costo {max}',
+  'debug.arrows': 'Flecha = siguiente paso · marrón = lodo',
+  'debug.replay': 'Costo {level} de {max} · nodos en la frontera: {frontier}',
 }
 
 export type Key = keyof typeof es
@@ -25,7 +28,7 @@ export type Locale = 'es' | 'en'
 
 const en: Record<Key, string> = {
   'help.controls':
-    'Left click: tower · Right click: sell · D: debug · B: play BFS · P: pause · R: restart',
+    'Left click: tower · Right click: sell · D: debug · B: play search · P: pause · R: restart',
   'status.life': '♥ {life}',
   'status.wave': 'Wave {wave}',
   'status.next': 'Next wave in {seconds} s',
@@ -38,11 +41,14 @@ const en: Record<Key, string> = {
   'error.occupied': 'There is already a tower there',
   'error.enemy-on-cell': 'An enemy is on that cell',
   'error.blocks-path': 'It would block the path to the goal',
-  'metrics.bfs': 'BFS: {visited} nodes · {ms} ms',
-  'debug.title': 'Debug mode · BFS from the goal',
-  'debug.steps': '{max} steps',
-  'debug.arrows': 'Arrow = next step',
-  'debug.replay': 'Level {level} of {max} · nodes in the frontier: {frontier}',
+  'metrics.nodes': 'nodes',
+  'metrics.time': 'time',
+  'metrics.route': 'route cost',
+  'metrics.micros': '{us} µs',
+  'debug.title': 'Debug mode · Dijkstra from the goal',
+  'debug.cost': 'cost {max}',
+  'debug.arrows': 'Arrow = next step · brown = mud',
+  'debug.replay': 'Cost {level} of {max} · nodes in the frontier: {frontier}',
 }
 
 const dictionaries: Record<Locale, Record<Key, string>> = { es, en }

@@ -1,11 +1,15 @@
 import './style.css'
 import { mapConfig, rules } from './config'
+import { routeCost } from './game/debug'
 import { createGame } from './game/map'
 import type { GameState, Msg } from './game/state'
 import { update } from './game/update'
-import type { CellIndex } from './graph/grid'
+import type { ConnectedGrid } from './graph/connectivity'
+import { computeDijkstraField } from './graph/dijkstra'
+import { computeFlowField, type FlowField } from './graph/flow-field'
+import type { CellIndex, Grid } from './graph/grid'
 import { createScene } from './render/scene'
-import { createHud, type ShellEvent } from './ui/hud'
+import { createHud, type PathMetrics, type SearchMetrics, type ShellEvent } from './ui/hud'
 
 // Shell: the only mutable state lives here. Input becomes `Msg`, `update` decides, and the
 // scene and HUD only display the result.
@@ -55,17 +59,60 @@ window.addEventListener('resize', () => scene.resize())
 function restart() {
   queue.length = 0
   state = createGame(mapConfig, rules)
+  showMetrics()
 }
 
-/** Runs one message through the reducer, adding the measured time to recompute events. */
+/** Fills the metrics panel for the current grid, before any tower changes it. */
+function showMetrics() {
+  hud.handle({ kind: 'path-recomputed', metrics: measure(state.world, state.map.spawns) })
+}
+
+/** Runs one message through the reducer; a recompute event gains the measured metrics. */
 function dispatch(msg: Msg): readonly ShellEvent[] {
-  const start = performance.now()
   const [next, events] = update(state, msg)
-  const ms = performance.now() - start
   state = next
-  return events.map((event) => (event.kind === 'path-recomputed' ? { ...event, ms } : event))
+  return events.map((event) =>
+    event.kind === 'path-recomputed'
+      ? { kind: 'path-recomputed', metrics: measure(state.world, state.map.spawns) }
+      : event,
+  )
 }
 
+/**
+ * Times BFS and Dijkstra on the same grid and prices the routes each one gives the spawns.
+ * The game itself only uses Dijkstra; the BFS runs here just for the comparison.
+ */
+function measure(world: ConnectedGrid, spawns: readonly CellIndex[]): PathMetrics {
+  const { grid, goal } = world
+  const search = (compute: (grid: Grid, goal: CellIndex) => FlowField): SearchMetrics => {
+    const field = compute(grid, goal)
+    return {
+      visited: field.visited,
+      ms: timePerRun(() => compute(grid, goal)),
+      // Every spawn reaches the goal in a connected grid, with either search.
+      routeCost: spawns.reduce((sum, spawn) => sum + (routeCost(grid, field, spawn) ?? 0), 0),
+    }
+  }
+  return { bfs: search(computeFlowField), dijkstra: search(computeDijkstraField) }
+}
+
+/** Shortest time worth measuring: one run takes microseconds, below the timer's resolution. */
+const MEASURE_MS = 4
+
+/** Average time of `run`, repeating it until `MEASURE_MS` have passed. */
+function timePerRun(run: () => void): number {
+  const start = performance.now()
+  let runs = 0
+  let elapsed = 0
+  do {
+    run()
+    runs++
+    elapsed = performance.now() - start
+  } while (elapsed < MEASURE_MS)
+  return elapsed / runs
+}
+
+showMetrics()
 let last = performance.now()
 function frame(now: number) {
   queue.push({ kind: 'tick', dt: Math.min((now - last) / 1000, MAX_DT) })

@@ -4,10 +4,22 @@ import type { ConnectedGrid } from '../graph/connectivity'
 import { type Key, t } from '../i18n'
 import { assertNever } from '../shared/assert'
 
-/** A core event as the shell sees it: `path-recomputed` gains the time measured by `main.ts`. */
+/** How one search did on the current grid, measured by `main.ts`. */
+export type SearchMetrics = {
+  readonly visited: number
+  /** Average time of one full run, in milliseconds. */
+  readonly ms: number
+  /** Total cost of the routes its flow field gives the spawns. */
+  readonly routeCost: number
+}
+
+/** BFS against Dijkstra on the same grid, for the metrics panel. */
+export type PathMetrics = { readonly bfs: SearchMetrics; readonly dijkstra: SearchMetrics }
+
+/** A core event as the shell sees it: `path-recomputed` carries the metrics `main.ts` measured. */
 export type ShellEvent =
   | Exclude<Event, { kind: 'path-recomputed' }>
-  | { readonly kind: 'path-recomputed'; readonly visited: number; readonly ms: number }
+  | { readonly kind: 'path-recomputed'; readonly metrics: PathMetrics }
 
 export type Hud = {
   readonly handle: (event: ShellEvent) => void
@@ -20,9 +32,29 @@ const TOAST_MS = 2000
 export function createHud(container: HTMLElement): Hud {
   const root = element('div', 'hud')
   const help = element('div', 'hud-help')
-  const metrics = element('div', 'hud-metrics')
   const toast = element('div', 'hud-toast')
   help.textContent = t('help.controls')
+
+  // Metrics: a small table, BFS against Dijkstra on the current grid.
+  const metrics = element('div', 'hud-metrics')
+  metrics.append(
+    ...['', t('metrics.nodes'), t('metrics.time'), t('metrics.route')].map((text) =>
+      cell(text, 'hud-metrics-head'),
+    ),
+  )
+  const metricsRow = (name: string) => {
+    const row = { visited: cell(''), time: cell(''), route: cell('') }
+    metrics.append(cell(name, 'hud-metrics-name'), row.visited, row.time, row.route)
+    return row
+  }
+  const bfsRow = metricsRow('BFS')
+  const dijkstraRow = metricsRow('Dijkstra')
+  const showMetrics = (row: ReturnType<typeof metricsRow>, search: SearchMetrics) => {
+    row.visited.textContent = String(search.visited)
+    row.time.textContent = t('metrics.micros', { us: Math.round(search.ms * 1000) })
+    row.route.textContent = String(search.routeCost)
+  }
+  metrics.hidden = true
 
   // Base life and wave, under the controls.
   const status = element('div', 'hud-status')
@@ -94,12 +126,15 @@ export function createHud(container: HTMLElement): Hud {
         case 'game-over':
           // The overlay follows `state.phase` in `render`.
           break
-        case 'path-recomputed':
-          metrics.textContent = t('metrics.bfs', {
-            visited: event.visited,
-            ms: event.ms.toFixed(2),
-          })
+        case 'path-recomputed': {
+          const { bfs, dijkstra } = event.metrics
+          showMetrics(bfsRow, bfs)
+          showMetrics(dijkstraRow, dijkstra)
+          // On mud the BFS route costs more: mark it, that is the reason to use Dijkstra.
+          bfsRow.route.classList.toggle('worse', bfs.routeCost > dijkstra.routeCost)
+          metrics.hidden = false
           break
+        }
         default:
           assertNever(event)
       }
@@ -135,7 +170,7 @@ export function createHud(container: HTMLElement): Hud {
       // The maximum only changes with the world, so the DOM is touched only then.
       if (!state.debug || state.world === legendWorld) return
       legendWorld = state.world
-      scaleMax.textContent = t('debug.steps', { max: maxDistance(state.world) })
+      scaleMax.textContent = t('debug.cost', { max: maxDistance(state.world) })
     },
   }
 }
@@ -160,5 +195,12 @@ function errorKey(error: PlacementError): Key {
 function element(tag: 'div' | 'span', className: string): HTMLElement {
   const el = document.createElement(tag)
   el.className = className
+  return el
+}
+
+/** A cell of the metrics table. */
+function cell(text: string, className = ''): HTMLElement {
+  const el = element('span', className)
+  el.textContent = text
   return el
 }

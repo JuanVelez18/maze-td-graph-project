@@ -106,20 +106,41 @@ canvas {
   display: none;
 }
 
+/* BFS against Dijkstra: a 4-column table (name, nodes, time, route cost). */
 .hud-metrics {
   bottom: 1rem;
+  display: grid;
+  grid-template-columns: auto repeat(3, auto);
+  column-gap: 1.2rem;
+  row-gap: 0.2rem;
+  text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-.hud-metrics:empty {
+.hud-metrics[hidden] {
   display: none;
+}
+
+.hud-metrics-head {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #aab0bf;
+}
+
+.hud-metrics-name {
+  text-align: left;
+}
+
+/* The BFS route when it costs more than Dijkstra's. */
+.hud-metrics .worse {
+  color: #ff7a7a;
 }
 
 .hud-debug {
   position: absolute;
   top: 1rem;
   right: 1rem;
-  width: 22rem;
+  width: 26rem;
   padding: 0.6rem 0.8rem;
   border-radius: 0.4rem;
   background: rgb(0 0 0 / 0.7);
