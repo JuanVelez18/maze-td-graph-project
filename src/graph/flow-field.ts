@@ -8,7 +8,10 @@ export const UNREACHABLE = -1
  * up its current cell.
  */
 export type FlowField = {
-  /** Steps from each cell to the goal; `UNREACHABLE` for walls and cells with no path. */
+  /**
+   * Distance from each cell to the goal: steps for the BFS, total cost for Dijkstra.
+   * `UNREACHABLE` for walls and cells with no path.
+   */
   readonly distance: Int32Array
   /** Next cell on a shortest path to the goal; `UNREACHABLE` for the goal and unreachable cells. */
   readonly next: Int32Array
@@ -53,7 +56,7 @@ export function computeFlowField(grid: Grid, goal: CellIndex): FlowField {
   return flowField
 }
 
-/** Steps from `cell` to the goal, or `undefined` if there is no path. */
+/** Distance (steps or cost) from `cell` to the goal, or `undefined` if there is no path. */
 export function distanceTo(field: FlowField, cell: CellIndex): number | undefined {
   const distance = field.distance[cell]
 
