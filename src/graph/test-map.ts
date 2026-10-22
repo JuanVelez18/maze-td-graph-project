@@ -1,4 +1,7 @@
-import { type CellIndex, cellAt, createGrid, type Grid, setWall } from './grid'
+import { type CellIndex, cellAt, createGrid, type Grid, setCost, setWall } from './grid'
+
+/** Cost of a `~` cell in test maps. */
+export const TEST_MUD_COST = 5
 
 export type TestMap = {
   readonly grid: Grid
@@ -9,7 +12,8 @@ export type TestMap = {
 }
 
 /**
- * Builds a grid from ASCII art, one row per line: `.` open, `#` wall, `S` spawn, `G` goal.
+ * Builds a grid from ASCII art, one row per line: `.` open, `#` wall, `~` mud (costs
+ * `TEST_MUD_COST`), `S` spawn, `G` goal.
  * Spawns are listed in reading order (left to right, top to bottom).
  */
 export function parseMap(text: string): TestMap {
@@ -34,6 +38,7 @@ export function parseMap(text: string): TestMap {
     Array.from(row).forEach((char, x) => {
       const cell = at(x, y)
       if (char === '#') grid = setWall(grid, cell, true)
+      else if (char === '~') grid = setCost(grid, cell, TEST_MUD_COST)
       else if (char === 'G') goal = cell
       else if (char === 'S') spawns.push(cell)
       else if (char !== '.') throw new Error(`Unknown map character '${char}'`)

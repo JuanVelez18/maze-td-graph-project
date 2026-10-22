@@ -7,11 +7,16 @@ export type CellIndex = Brand<number, 'CellIndex'>
  * Implicit graph: every cell is a node, and two orthogonally adjacent open cells share an
  * edge. There are no adjacency lists; neighbors are computed from the index.
  *
- * Copy-on-write: functions that change the grid return a new one. `walls` is internal to
+ * Copy-on-write: functions that change the grid return a new one. `walls` and `weights` is internal to
  * `graph/` (1 = wall, 0 = open); code outside this folder goes through the functions below.
  */
 export type Grid = Brand<
-  { readonly width: number; readonly height: number; readonly walls: Uint8Array },
+  {
+    readonly width: number
+    readonly height: number
+    readonly walls: Uint8Array
+    readonly weights: Uint8Array
+  },
   'Grid'
 >
 
@@ -22,7 +27,12 @@ export function createGrid(width: number, height: number): Grid {
   if (!Number.isInteger(width) || !Number.isInteger(height))
     throw new Error('Dimensions must be integers')
 
-  return { width, height, walls: new Uint8Array(width * height) } as Grid
+  return {
+    width,
+    height,
+    walls: new Uint8Array(width * height),
+    weights: new Uint8Array(width * height).fill(1),
+  } as Grid
 }
 
 /** Validating constructor of `CellIndex`: `undefined` when (x, y) is outside the grid. */
@@ -58,7 +68,45 @@ export function setWall(grid: Grid, cell: CellIndex, wall: boolean): Grid {
   const walls = grid.walls.slice()
   walls[cell] = wall ? 1 : 0
 
-  return { width: grid.width, height: grid.height, walls } as Grid
+  return {
+    width: grid.width,
+    height: grid.height,
+    walls,
+    weights: grid.weights,
+  } as Grid
+}
+
+/** Largest cost a cell can have (costs are stored in a `Uint8Array`). */
+export const MAX_COST = 255
+
+/**
+ * Cost an enemy pays to ENTER `cell`: 1 by default, more on mud. Because the weight belongs
+ * to the destination node, `u → v` costs `cost(v)` and the graph becomes directed.
+ */
+export function cost(grid: Grid, cell: CellIndex): number {
+  const weight = grid.weights[cell]
+  if (!weight) throw new Error('Cell is out of graph')
+
+  return weight
+}
+
+/**
+ * Returns a new grid where entering `cell` costs `value`. The input is not mutated.
+ * Costs that are not integers in [1, MAX_COST] are a bug and throw.
+ */
+export function setCost(grid: Grid, cell: CellIndex, value: number): Grid {
+  if (value < 1 || value > MAX_COST) throw new Error(`Cost must be between 1 and ${MAX_COST}`)
+  if (!Number.isInteger(value)) throw new Error('Cost must be integer')
+
+  const weights = grid.weights.slice()
+  weights[cell] = value
+
+  return {
+    width: grid.width,
+    height: grid.height,
+    walls: grid.walls,
+    weights,
+  } as Grid
 }
 
 /**
